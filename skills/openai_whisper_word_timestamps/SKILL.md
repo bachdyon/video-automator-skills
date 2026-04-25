@@ -101,7 +101,6 @@ For a job-scoped run:
 python skills/openai_whisper_word_timestamps/scripts/transcribe_word_timestamps.py \
   --audio jobs/<job_id>/source/voice.wav \
   --output jobs/<job_id>/source/transcript_word_level.toml \
-  --env-file jobs/<job_id>/source/.env \
   --language vi
 ```
 

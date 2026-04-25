@@ -42,7 +42,7 @@ def multipart_form(fields: dict[str, str], files: dict[str, Path]) -> tuple[byte
 def openai_key(env_file: Path) -> str:
     key = env_value(env_file, "OPENAI_API_KEY")
     if not key:
-        die("OPENAI_API_KEY is required in source/.env")
+        die("OPENAI_API_KEY is required in the environment or .env")
     return key
 
 
@@ -178,7 +178,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--audio", type=Path, default=Path("source/voice.wav"))
     parser.add_argument("--output", type=Path, default=Path("source/transcript_word_level.toml"))
-    parser.add_argument("--env-file", type=Path, default=Path("source/.env"))
+    parser.add_argument("--env-file", type=Path, default=Path(".env"))
     parser.add_argument("--model", default="whisper-1")
     parser.add_argument("--language", default="vi")
     parser.add_argument("--prompt", default="")

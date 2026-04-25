@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import sys
 import time
 from pathlib import Path
@@ -21,7 +22,7 @@ SPEECH_BASE = "https://api.ausynclab.io/api/v1/speech"
 def api_key(env_path: Path) -> str:
     key = env_value(env_path, "AUSYNCLAB_API_KEY")
     if not key:
-        die("AUSYNCLAB_API_KEY is required in source/.env")
+        die("AUSYNCLAB_API_KEY is required in the environment or .env")
     return key
 
 
@@ -137,7 +138,10 @@ def synthesize(args: argparse.Namespace) -> None:
     env = load_env_file(args.env_file)
     voice_id = args.voice_id or env.get("AUSYNCLAB_VOICE_ID")
     if not voice_id:
-        die("voice_id is required via --voice-id or AUSYNCLAB_VOICE_ID in source/.env")
+        die("voice_id is required via --voice-id or AUSYNCLAB_VOICE_ID in .env")
+    callback_url = args.callback_url or os.environ.get("AUSYNCLAB_CALLBACK_URL") or env.get("AUSYNCLAB_CALLBACK_URL")
+    if not callback_url:
+        die("AusyncLab TTS requires --callback-url or AUSYNCLAB_CALLBACK_URL")
     text = read_text(args)
     payload = {
         "audio_name": args.audio_name,
@@ -224,7 +228,7 @@ def write_voice_selection(path: Path, voice: dict[str, Any], args: argparse.Name
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--env-file", type=Path, default=Path("source/.env"))
+    parser.add_argument("--env-file", type=Path, default=Path(".env"))
     sub = parser.add_subparsers(dest="command", required=True)
 
     list_parser = sub.add_parser("list")
@@ -253,6 +257,7 @@ def build_parser() -> argparse.ArgumentParser:
     synth_parser.add_argument("--creative-plan", type=Path, default=Path("source/creative_plan.toml"))
     synth_parser.add_argument("--language", default="vi")
     synth_parser.add_argument("--model-name", default="myna-2")
+    synth_parser.add_argument("--callback-url")
     synth_parser.add_argument("--speed", type=float, default=1.0)
     synth_parser.add_argument("--poll-interval", type=int, default=5)
     synth_parser.add_argument("--timeout-seconds", type=int, default=600)

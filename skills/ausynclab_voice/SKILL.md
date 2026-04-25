@@ -35,7 +35,7 @@ X-API-Key: <api key>
 
 - API key from `.env`, preferably job-scoped `jobs/<job_id>/source/.env`.
 - Script text from `source/creative_plan.toml` or direct user input.
-- Optional preferred voice config from `source/.env`.
+- Optional preferred voice config from `.env` in the repo root, beside `skills/`.
 
 ## Outputs
 
@@ -63,7 +63,7 @@ If the API returns another format or URL, download/persist the final audio path 
 4. If the user approves or has a saved preference, persist:
 
 ```text
-source/.env
+.env
 ```
 
 with values like:
@@ -72,7 +72,7 @@ with values like:
 AUSYNCLAB_VOICE_ID=123
 ```
 
-For job-scoped runs, prefer `jobs/<job_id>/source/.env` for job-specific voice preferences. Use shared `source/.env` only for global defaults.
+For job-scoped runs, keep using shared `.env` in the repo root for credentials and global voice defaults unless the user explicitly provides another env file.
 
 5. Submit Text-to-Speech request with `audio_name`, `text`, `voice_id`, `speed`, `model_name`, and `language`.
 6. If callback handling is unavailable, poll the speech list/detail endpoint until the audio state succeeds or fails.
@@ -128,10 +128,10 @@ python skills/ausynclab_voice/scripts/ausynclab_voice.py synthesize --creative-p
 For a job-scoped run:
 
 ```bash
-python skills/ausynclab_voice/scripts/ausynclab_voice.py --env-file jobs/<job_id>/source/.env synthesize \
+python skills/ausynclab_voice/scripts/ausynclab_voice.py synthesize \
   --creative-plan jobs/<job_id>/source/creative_plan.toml \
   --output-audio jobs/<job_id>/source/voice.wav \
   --output jobs/<job_id>/source/voice_selection.toml
 ```
 
-The script handles `source/.env`, API key lookup, voice listing, simple recommendation, TTS submission, polling, audio download, and `source/voice_selection.toml`.
+The script handles `.env`, API key lookup, voice listing, simple recommendation, TTS submission, polling, audio download, and `source/voice_selection.toml`.
