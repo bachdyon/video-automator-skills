@@ -3,9 +3,9 @@
 Upload a video to Gemini Files API and run long-context video analysis.
 
 Usage:
-  export GEMINI_API_KEY="your_api_key"
   python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py \
     --video-path /absolute/path/video.mp4 \
+    --env-file jobs/<job_id>/source/.env \
     --model gemini-3.1-pro-preview \
     --prompt "Create a reusable VDS from this video."
 """
@@ -14,13 +14,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
 from typing import Any
 
 from google import genai
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
+from pipeline_utils import env_value
 
 DEFAULT_MODEL = "gemini-3.1-pro-preview"
 DEFAULT_FALLBACK_MODELS = [
@@ -47,6 +49,11 @@ def parse_args() -> argparse.Namespace:
         "--video-path",
         required=True,
         help="Absolute or relative path to video file.",
+    )
+    parser.add_argument(
+        "--env-file",
+        default="source/.env",
+        help="Path to .env containing GEMINI_API_KEY.",
     )
     parser.add_argument(
         "--model",
@@ -94,11 +101,11 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def get_api_key() -> str:
-    key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+def get_api_key(env_file: str) -> str:
+    key = env_value(env_file, "GEMINI_API_KEY")
     if not key:
         raise RuntimeError(
-            "Missing API key. Set GEMINI_API_KEY or GOOGLE_API_KEY before running."
+            "Missing API key. Set GEMINI_API_KEY in source/.env."
         )
     return key
 
@@ -199,7 +206,7 @@ def main() -> int:
         return 2
 
     try:
-        api_key = get_api_key()
+        api_key = get_api_key(args.env_file)
         client = genai.Client(api_key=api_key)
 
         print(f"[upload] Uploading: {video_path}")

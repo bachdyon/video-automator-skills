@@ -33,7 +33,7 @@ X-API-Key: <api key>
 
 ## Inputs
 
-- API key from environment, preferably `AUSYNCLAB_API_KEY`.
+- API key from `.env`, preferably job-scoped `jobs/<job_id>/source/.env`.
 - Script text from `source/creative_plan.toml` or direct user input.
 - Optional preferred voice config from `source/.env`.
 
@@ -57,7 +57,7 @@ If the API returns another format or URL, download/persist the final audio path 
 
 ## Workflow
 
-1. Check `AUSYNCLAB_API_KEY`. Do not print the key.
+1. Check `AUSYNCLAB_API_KEY` from `.env`. Do not print the key.
 2. List voices when voice choice is unknown.
 3. Recommend a voice based on language, tone, audience, VDS mood, and creative plan delivery.
 4. If the user approves or has a saved preference, persist:
@@ -70,14 +70,11 @@ with values like:
 
 ```text
 AUSYNCLAB_VOICE_ID=123
-AUSYNCLAB_VOICE_NAME=...
-AUSYNCLAB_TTS_MODEL=myna-2
-AUSYNCLAB_TTS_SPEED=1.0
 ```
 
 For job-scoped runs, prefer `jobs/<job_id>/source/.env` for job-specific voice preferences. Use shared `source/.env` only for global defaults.
 
-5. Submit Text-to-Speech request with `audio_name`, `text`, `voice_id`, `speed`, `model_name`, `language`, and `callback_url` when available.
+5. Submit Text-to-Speech request with `audio_name`, `text`, `voice_id`, `speed`, `model_name`, and `language`.
 6. If callback handling is unavailable, poll the speech list/detail endpoint until the audio state succeeds or fails.
 7. Download the final audio URL to `source/voice.wav` or `source/voice.mp3`.
 8. Write `source/voice_selection.toml`.
@@ -125,7 +122,7 @@ Use the bundled script instead of rewriting API calls:
 ```bash
 python skills/ausynclab_voice/scripts/ausynclab_voice.py list --output source/voices.toml
 python skills/ausynclab_voice/scripts/ausynclab_voice.py recommend --language vi --use-case NARRATION --save-preference
-python skills/ausynclab_voice/scripts/ausynclab_voice.py synthesize --creative-plan source/creative_plan.toml --callback-url "$AUSYNCLAB_CALLBACK_URL"
+python skills/ausynclab_voice/scripts/ausynclab_voice.py synthesize --creative-plan source/creative_plan.toml
 ```
 
 For a job-scoped run:
@@ -134,8 +131,7 @@ For a job-scoped run:
 python skills/ausynclab_voice/scripts/ausynclab_voice.py --env-file jobs/<job_id>/source/.env synthesize \
   --creative-plan jobs/<job_id>/source/creative_plan.toml \
   --output-audio jobs/<job_id>/source/voice.wav \
-  --output jobs/<job_id>/source/voice_selection.toml \
-  --callback-url "$AUSYNCLAB_CALLBACK_URL"
+  --output jobs/<job_id>/source/voice_selection.toml
 ```
 
 The script handles `source/.env`, API key lookup, voice listing, simple recommendation, TTS submission, polling, audio download, and `source/voice_selection.toml`.

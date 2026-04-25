@@ -5,14 +5,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import os
 import sys
 import time
 from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
-from pipeline_utils import die, download_file, http_json, load_env_file, tokenize, upsert_env_file, write_toml_document
+from pipeline_utils import die, download_file, env_value, http_json, load_env_file, tokenize, upsert_env_file, write_toml_document
 
 
 VOICE_BASE = "https://api.ausynclab.io/api/v1/voices"
@@ -20,10 +19,9 @@ SPEECH_BASE = "https://api.ausynclab.io/api/v1/speech"
 
 
 def api_key(env_path: Path) -> str:
-    env_file = load_env_file(env_path)
-    key = os.environ.get("AUSYNCLAB_API_KEY") or env_file.get("AUSYNCLAB_API_KEY")
+    key = env_value(env_path, "AUSYNCLAB_API_KEY")
     if not key:
-        die("AUSYNCLAB_API_KEY is required in the environment or source/.env")
+        die("AUSYNCLAB_API_KEY is required in source/.env")
     return key
 
 
@@ -97,9 +95,6 @@ def recommend(args: argparse.Namespace) -> dict[str, Any]:
             args.env_file,
             {
                 "AUSYNCLAB_VOICE_ID": str(selected.get("id") or ""),
-                "AUSYNCLAB_VOICE_NAME": str(selected.get("name") or ""),
-                "AUSYNCLAB_TTS_MODEL": args.model_name,
-                "AUSYNCLAB_TTS_SPEED": str(args.speed),
             },
         )
     print(f"recommended voice_id={selected.get('id')} name={selected.get('name')}")
@@ -143,9 +138,6 @@ def synthesize(args: argparse.Namespace) -> None:
     voice_id = args.voice_id or env.get("AUSYNCLAB_VOICE_ID")
     if not voice_id:
         die("voice_id is required via --voice-id or AUSYNCLAB_VOICE_ID in source/.env")
-    callback_url = args.callback_url or os.environ.get("AUSYNCLAB_CALLBACK_URL") or env.get("AUSYNCLAB_CALLBACK_URL")
-    if not callback_url:
-        die("AusyncLab TTS requires --callback-url or AUSYNCLAB_CALLBACK_URL")
     text = read_text(args)
     payload = {
         "audio_name": args.audio_name,
@@ -154,7 +146,6 @@ def synthesize(args: argparse.Namespace) -> None:
         "speed": args.speed,
         "model_name": args.model_name,
         "language": args.language,
-        "callback_url": callback_url,
     }
     response = http_json(f"{SPEECH_BASE}/text-to-speech", method="POST", headers=headers(key), body=payload, timeout=120)
     result = response.get("result") or response
@@ -168,7 +159,7 @@ def synthesize(args: argparse.Namespace) -> None:
     output_audio = download_file(audio_url, args.output_audio)
     voice = {
         "id": int(voice_id),
-        "name": env.get("AUSYNCLAB_VOICE_NAME", ""),
+        "name": "",
         "language": args.language,
         "gender": "",
         "age": "",
@@ -263,7 +254,6 @@ def build_parser() -> argparse.ArgumentParser:
     synth_parser.add_argument("--language", default="vi")
     synth_parser.add_argument("--model-name", default="myna-2")
     synth_parser.add_argument("--speed", type=float, default=1.0)
-    synth_parser.add_argument("--callback-url")
     synth_parser.add_argument("--poll-interval", type=int, default=5)
     synth_parser.add_argument("--timeout-seconds", type=int, default=600)
     synth_parser.add_argument("--output-audio", type=Path, default=Path("source/voice.wav"))
