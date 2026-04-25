@@ -41,6 +41,7 @@ jobs/
       render_report.toml
     logs/
       pipeline_status.toml
+      todo.toml
 ```
 
 ## Responsibilities
@@ -52,6 +53,7 @@ jobs/
 5. Mark pipeline stages as `pending`, `running`, `done`, `failed`, or `stale`.
 6. Mark downstream stages stale when inputs change.
 7. Provide paths that other skills should use.
+8. Maintain `logs/todo.toml` as the always-current todo list for the job.
 
 ## Stage Order
 
@@ -98,6 +100,9 @@ python skills/video_job_manager/scripts/manage_job.py stale-from \
 
 python skills/video_job_manager/scripts/manage_job.py status \
   --job jobs/2026-04-25_001_morning-routine-ad
+
+python skills/video_job_manager/scripts/manage_job.py todo \
+  --job jobs/2026-04-25_001_morning-routine-ad
 ```
 
 ## TOML Contract
@@ -139,6 +144,29 @@ updated_at = "..."
 reason = ""
 ```
 
+`logs/todo.toml` must be kept in sync with stage state:
+
+```toml
+[[todos]]
+id = "TODO_003"
+stage = "creative_plan"
+title = "Create script, scene intents, and overlay plan"
+status = "done"
+output = "source/creative_plan.toml"
+updated_at = "..."
+reason = ""
+```
+
+Todo status mapping:
+
+```text
+pending -> todo
+running -> doing
+done -> done
+failed -> blocked
+stale -> todo
+```
+
 ## Quality Rules
 
 - Never use shared `source/` for a real video job when a job directory exists.
@@ -146,3 +174,4 @@ reason = ""
 - Register input changes before rerunning pipeline stages.
 - When a stage's input changes, mark downstream stages stale instead of pretending they are valid.
 - Keep all paths in `job.toml` relative to the job directory when possible.
+- Every state-changing command must refresh `logs/todo.toml`.

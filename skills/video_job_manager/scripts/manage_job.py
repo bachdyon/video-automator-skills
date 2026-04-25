@@ -39,6 +39,26 @@ STAGE_OUTPUTS = {
     "render": "output/final_video.mp4",
 }
 
+TODO_STATUS_BY_STAGE_STATUS = {
+    "pending": "todo",
+    "running": "doing",
+    "done": "done",
+    "failed": "blocked",
+    "stale": "todo",
+}
+
+TODO_TITLES = {
+    "request": "Capture original video request",
+    "reference_style": "Build reusable VDS from reference video",
+    "creative_plan": "Create script, scene intents, and overlay plan",
+    "voice": "Select voice and generate narration audio",
+    "transcript": "Generate word-level transcript timestamps",
+    "asset_semantics": "Probe and describe raw visual assets",
+    "semantic_mapping": "Map transcript and scene intents to assets",
+    "render_plan": "Build detailed render plan",
+    "render": "Render final video",
+}
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
@@ -103,6 +123,56 @@ def initial_stages(created_at: str) -> list[dict[str, Any]]:
     ]
 
 
+def initial_todos(created_at: str) -> list[dict[str, Any]]:
+    todos: list[dict[str, Any]] = []
+    for index, stage in enumerate(STAGES, start=1):
+        todos.append(
+            {
+                "id": f"TODO_{index:03d}",
+                "stage": stage,
+                "title": TODO_TITLES[stage],
+                "status": "done" if stage == "request" else "todo",
+                "output": STAGE_OUTPUTS[stage],
+                "updated_at": created_at if stage == "request" else "",
+                "reason": "",
+            }
+        )
+    return todos
+
+
+def load_todos(path: Path) -> list[dict[str, Any]]:
+    todo_path = path / "logs" / "todo.toml"
+    if not todo_path.exists():
+        return initial_todos(now_iso())
+    data = read_toml(todo_path)
+    return data.get("todos", [])
+
+
+def sync_todos_from_stages(path: Path, data: dict[str, Any]) -> list[dict[str, Any]]:
+    existing = {row.get("stage"): row for row in load_todos(path)}
+    todos: list[dict[str, Any]] = []
+    for index, stage in enumerate(STAGES, start=1):
+        stage_row = find_stage(data, stage)
+        previous = existing.get(stage, {})
+        status = TODO_STATUS_BY_STAGE_STATUS.get(stage_row.get("status"), "todo")
+        todos.append(
+            {
+                "id": previous.get("id") or f"TODO_{index:03d}",
+                "stage": stage,
+                "title": previous.get("title") or TODO_TITLES[stage],
+                "status": status,
+                "output": stage_row.get("output") or STAGE_OUTPUTS[stage],
+                "updated_at": stage_row.get("updated_at") or previous.get("updated_at") or "",
+                "reason": stage_row.get("reason") or previous.get("reason") or "",
+            }
+        )
+    return todos
+
+
+def write_todos(path: Path, todos: list[dict[str, Any]]) -> None:
+    write_toml_document(path / "logs" / "todo.toml", [("todos", todos)])
+
+
 def write_job(path: Path, data: dict[str, Any]) -> None:
     sections: list[tuple[str | None, dict[str, Any] | list[dict[str, Any]]]] = [
         ("job", data["job"]),
@@ -113,6 +183,7 @@ def write_job(path: Path, data: dict[str, Any]) -> None:
     ]
     write_toml_document(path / "job.toml", sections)
     write_toml_document(path / "logs" / "pipeline_status.toml", [("stages", data.get("stages", []))])
+    write_todos(path, sync_todos_from_stages(path, data))
 
 
 def create(args: argparse.Namespace) -> None:
@@ -245,7 +316,7 @@ def mark_stale(data: dict[str, Any], stage: str, reason: str) -> None:
     timestamp = now_iso()
     for row in data.get("stages", []):
         name = row.get("name")
-        if name in STAGES and STAGES.index(name) >= start and row.get("status") == "done":
+        if name in STAGES and STAGES.index(name) >= start and row.get("status") != "pending":
             row["status"] = "stale"
             row["updated_at"] = timestamp
             row["reason"] = reason
@@ -291,6 +362,25 @@ def status(args: argparse.Namespace) -> None:
         output = row.get("output") or ""
         exists = "exists" if output and (path / output).exists() else "missing"
         print(f"{row.get('name')}: {row.get('status')} [{exists}] {output}")
+    todo_counts: dict[str, int] = {}
+    for todo in load_todos(path):
+        status_name = str(todo.get("status") or "todo")
+        todo_counts[status_name] = todo_counts.get(status_name, 0) + 1
+    if todo_counts:
+        summary = ", ".join(f"{key}={todo_counts[key]}" for key in sorted(todo_counts))
+        print(f"todo: {summary}")
+
+
+def todo(args: argparse.Namespace) -> None:
+    path = job_dir(args.job)
+    data = load_job(path)
+    todos = sync_todos_from_stages(path, data)
+    write_todos(path, todos)
+    if args.format == "toml":
+        print(path / "logs" / "todo.toml")
+        return
+    for item in todos:
+        print(f"{item.get('id')} {item.get('status')} {item.get('stage')}: {item.get('title')}")
 
 
 def paths(args: argparse.Namespace) -> None:
@@ -349,6 +439,11 @@ def build_parser() -> argparse.ArgumentParser:
     status_parser = sub.add_parser("status")
     status_parser.add_argument("--job", required=True)
     status_parser.set_defaults(func=status)
+
+    todo_parser = sub.add_parser("todo")
+    todo_parser.add_argument("--job", required=True)
+    todo_parser.add_argument("--format", choices=["text", "toml"], default="text")
+    todo_parser.set_defaults(func=todo)
 
     paths_parser = sub.add_parser("paths")
     paths_parser.add_argument("--job", required=True)
