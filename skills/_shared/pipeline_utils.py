@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import mimetypes
-import os
 import re
 import shutil
 import subprocess
@@ -103,6 +102,15 @@ def load_env_file(path: str | Path) -> dict[str, str]:
         key, value = line.split("=", 1)
         env[key.strip()] = value.strip().strip('"').strip("'")
     return env
+
+
+def env_value(path: str | Path, *keys: str) -> str:
+    env = load_env_file(path)
+    for key in keys:
+        value = env.get(key)
+        if value:
+            return value
+    return ""
 
 
 def upsert_env_file(path: str | Path, updates: dict[str, str]) -> None:

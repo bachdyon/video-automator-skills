@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
 import uuid
@@ -15,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
-from pipeline_utils import die, guess_mime, load_env_file, media_metadata, write_toml_document
+from pipeline_utils import die, env_value, guess_mime, media_metadata, write_toml_document
 
 
 OPENAI_TRANSCRIPTIONS_URL = "https://api.openai.com/v1/audio/transcriptions"
@@ -41,10 +40,9 @@ def multipart_form(fields: dict[str, str], files: dict[str, Path]) -> tuple[byte
 
 
 def openai_key(env_file: Path) -> str:
-    env = load_env_file(env_file)
-    key = os.environ.get("OPENAI_API_KEY") or env.get("OPENAI_API_KEY")
+    key = env_value(env_file, "OPENAI_API_KEY")
     if not key:
-        die("OPENAI_API_KEY is required in the environment or source/.env")
+        die("OPENAI_API_KEY is required in source/.env")
     return key
 
 

@@ -146,12 +146,13 @@ Skill này có script upload video lên Gemini API để phân tích video dài/
 
 - Cài dependency:
   - `pip install -r skills/video_design_spec_builder/scripts/requirements.txt`
-- Thiết lập API key:
-  - `export GEMINI_API_KEY="YOUR_KEY"` (hoặc `GOOGLE_API_KEY`)
+- Thiết lập API key trong `.env`:
+  - Copy `env.example` sang `source/.env` hoặc `jobs/<job_id>/source/.env`, rồi điền `GEMINI_API_KEY`.
+  - Không commit `.env`; chỉ commit `env.example`.
 - Chạy script:
-  - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --model gemini-3.1-pro-preview`
+  - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --env-file source/.env --model gemini-3.1-pro-preview`
   - Có thể override fallback chain:
-    - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --model gemini-3.1-pro-preview --fallback-models gemini-3-flash-preview,gemini-2.5-pro,gemini-2.5-flash`
+    - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --env-file source/.env --model gemini-3.1-pro-preview --fallback-models gemini-3-flash-preview,gemini-2.5-pro,gemini-2.5-flash`
 
 Model gợi ý:
 
