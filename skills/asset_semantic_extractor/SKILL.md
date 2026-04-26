@@ -5,6 +5,10 @@ description: Analyze one or more image or video assets and produce a TOML semant
 
 # Asset Semantic Extractor
 
+## Script Environment Rule
+
+Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+
 ## Goal
 
 Create a reusable semantic index for raw image and video assets. This skill does not choose where assets go in the final video; it only describes what each asset contains.

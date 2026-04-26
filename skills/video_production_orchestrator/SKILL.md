@@ -19,6 +19,10 @@ to:
 
 This skill coordinates other skills. It should not replace their specialized work.
 
+## Script Environment Rule
+
+Before running any script in any pipeline stage, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Pass `.env` with `--env-file` when the script supports it. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+
 ## When To Use
 
 Use this skill when the user asks to create, regenerate, preview, or produce a complete new video using a reference/sample style and new source material.
@@ -67,9 +71,9 @@ Use this skill when the user asks to create, regenerate, preview, or produce a c
    - Output: `jobs/<job_id>/source/render_plan.toml`.
 
 8. **Render**
-   - Use `video-renderer`.
+   - Use `video-renderer`, which must verify/install and load the official `$remotion-best-practices` skill before creating or updating the job-scoped Remotion project.
    - Input: render plan + media files.
-   - Output: `jobs/<job_id>/output/final_video.mp4`.
+   - Output: job-scoped Remotion project at `jobs/<job_id>/remotion/`, then `jobs/<job_id>/output/final_video.mp4`.
 
 ## Artifact Contract
 
@@ -92,9 +96,27 @@ jobs/<job_id>/
     asset_semantics.toml
     semantic_mapping.toml
     render_plan.toml
+  remotion/
+    package.json
+    remotion.config.ts
+    tsconfig.json
+    src/
+      Root.tsx
+      Composition.tsx
+      render-plan.generated.ts
+      assets.generated.ts
+      components/
+      styles/
+    public/
+      assets/
   output/
+    preview.mp4
     final_video.mp4
+    thumbnail.jpg
     render_report.toml
+  logs/
+    render.log
+    validation.log
 ```
 
 ## Checkpoints

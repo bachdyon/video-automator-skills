@@ -1,0 +1,7 @@
+interface:
+  display_name: "Video Creative Planner"
+  short_description: "Plan scripts and scenes for short videos"
+  default_prompt: "Use $video-creative-planner to turn this video request into a production-ready creative plan and script."
+
+policy:
+  allow_implicit_invocation: true

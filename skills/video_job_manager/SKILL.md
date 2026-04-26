@@ -11,6 +11,10 @@ Manage everything that belongs to one video-generation request as a reproducible
 
 This skill does not create video content directly. It creates and maintains the job workspace that all other video skills read from and write to.
 
+## Script Environment Rule
+
+Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+
 ## When To Use
 
 Use this skill when the user starts a new video request, adds reference/input assets, asks for job status, reruns part of the pipeline, or needs to locate artifacts for a specific video request.
@@ -18,6 +22,8 @@ Use this skill when the user starts a new video request, adds reference/input as
 ## Default Layout
 
 ```text
+.env
+env.example
 jobs/
   <job_id>/
     job.toml
@@ -35,11 +41,21 @@ jobs/
       asset_semantics.toml
       semantic_mapping.toml
       render_plan.toml
+    remotion/
+      package.json
+      remotion.config.ts
+      tsconfig.json
+      src/
+      public/
+        assets/
     output/
-      previews/
+      preview.mp4
       final_video.mp4
+      thumbnail.jpg
       render_report.toml
     logs/
+      render.log
+      validation.log
       pipeline_status.toml
       todo.toml
 ```
@@ -129,6 +145,7 @@ input_dir = "input"
 reference_dir = "input/reference"
 raw_assets_dir = "input/raw_assets"
 source_dir = "source"
+remotion_dir = "remotion"
 output_dir = "output"
 
 [[inputs]]

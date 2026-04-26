@@ -1,0 +1,7 @@
+interface:
+  display_name: "OpenAI Whisper Word Timestamps"
+  short_description: "Transcribe audio with word timestamps"
+  default_prompt: "Use $openai-whisper-word-timestamps to transcribe this narration audio with sentence and word timestamps."
+
+policy:
+  allow_implicit_invocation: true

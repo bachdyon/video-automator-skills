@@ -5,6 +5,10 @@ description: Build reusable Video Design Specifications (VDS) from source videos
 
 # Video Design Spec Builder
 
+## Script Environment Rule
+
+Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Confirm `GEMINI_API_KEY` exists and pass `.env` with `--env-file`; never print secret values in logs, terminal output, JSON artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+
 ## Mục tiêu
 
 Tạo một bản VDS có thể tái sử dụng cho video ngắn dọc, giữ nguyên tinh thần biên tập (nhịp dựng, mood, cấu trúc kể chuyện), đồng thời loại bỏ toàn bộ chi tiết định danh cá nhân.
@@ -146,13 +150,13 @@ Skill này có script upload video lên Gemini API để phân tích video dài/
 
 - Cài dependency:
   - `pip install -r skills/video_design_spec_builder/scripts/requirements.txt`
-- Thiết lập API key trong `.env`:
-  - Copy `env.example` sang `source/.env` hoặc `jobs/<job_id>/source/.env`, rồi điền `GEMINI_API_KEY`.
+- Thiết lập API key trong repo-root `.env`:
+  - Copy `env.example` sang `.env` ở cùng cấp với `jobs/` và `skills/`, rồi điền `GEMINI_API_KEY`.
   - Không commit `.env`; chỉ commit `env.example`.
 - Chạy script:
-  - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --env-file source/.env --model gemini-3.1-pro-preview`
+  - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --env-file .env --model gemini-3.1-pro-preview`
   - Có thể override fallback chain:
-    - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --env-file source/.env --model gemini-3.1-pro-preview --fallback-models gemini-3-flash-preview,gemini-2.5-pro,gemini-2.5-flash`
+    - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --env-file .env --model gemini-3.1-pro-preview --fallback-models gemini-3-flash-preview,gemini-2.5-pro,gemini-2.5-flash`
 
 Model gợi ý:
 

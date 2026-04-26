@@ -198,7 +198,9 @@ def create(args: argparse.Namespace) -> None:
         "input/audio",
         "input/brand",
         "source",
-        "output/previews",
+        "remotion/src",
+        "remotion/public/assets",
+        "output",
         "logs",
     ]:
         (path / subdir).mkdir(parents=True, exist_ok=True)
@@ -225,6 +227,7 @@ def create(args: argparse.Namespace) -> None:
             "audio_dir": "input/audio",
             "brand_dir": "input/brand",
             "source_dir": "source",
+            "remotion_dir": "remotion",
             "output_dir": "output",
             "logs_dir": "logs",
         },

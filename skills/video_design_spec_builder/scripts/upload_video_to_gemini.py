@@ -5,7 +5,7 @@ Upload a video to Gemini Files API and run long-context video analysis.
 Usage:
   python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py \
     --video-path /absolute/path/video.mp4 \
-    --env-file jobs/<job_id>/source/.env \
+    --env-file .env \
     --model gemini-3.1-pro-preview \
     --prompt "Create a reusable VDS from this video."
 """
@@ -19,10 +19,8 @@ import time
 from pathlib import Path
 from typing import Any
 
-from google import genai
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
-from pipeline_utils import env_value
+from pipeline_utils import die, env_value
 
 DEFAULT_MODEL = "gemini-3.1-pro-preview"
 DEFAULT_FALLBACK_MODELS = [
@@ -52,8 +50,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--env-file",
-        default="source/.env",
-        help="Path to .env containing GEMINI_API_KEY.",
+        default=".env",
+        help="Path to repo-root .env containing GEMINI_API_KEY.",
     )
     parser.add_argument(
         "--model",
@@ -104,10 +102,19 @@ def parse_args() -> argparse.Namespace:
 def get_api_key(env_file: str) -> str:
     key = env_value(env_file, "GEMINI_API_KEY")
     if not key:
-        raise RuntimeError(
-            "Missing API key. Set GEMINI_API_KEY in source/.env."
-        )
+        die("Missing API key. Set GEMINI_API_KEY in repo-root .env.")
     return key
+
+
+def load_genai() -> Any:
+    try:
+        from google import genai
+    except ModuleNotFoundError:
+        die(
+            "Missing dependency: google-genai. Install it with "
+            "`pip install -r skills/video_design_spec_builder/scripts/requirements.txt`."
+        )
+    return genai
 
 
 def state_name(file_obj: Any) -> str:
@@ -121,7 +128,7 @@ def state_name(file_obj: Any) -> str:
 
 
 def wait_until_active(
-    client: genai.Client,
+    client: Any,
     file_name: str,
     poll_interval: float,
     timeout_seconds: int,
@@ -207,6 +214,7 @@ def main() -> int:
 
     try:
         api_key = get_api_key(args.env_file)
+        genai = load_genai()
         client = genai.Client(api_key=api_key)
 
         print(f"[upload] Uploading: {video_path}")

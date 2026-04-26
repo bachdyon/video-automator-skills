@@ -1,0 +1,7 @@
+interface:
+  display_name: "Video Renderer"
+  short_description: "Render final videos from render plans"
+  default_prompt: "Use $video-renderer to render the final short-form video from this TOML render plan and source assets."
+
+policy:
+  allow_implicit_invocation: true

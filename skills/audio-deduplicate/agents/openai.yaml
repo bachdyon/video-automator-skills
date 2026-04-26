@@ -1,0 +1,7 @@
+interface:
+  display_name: "Audio Deduplicate"
+  short_description: "Remove repeated speech from audio"
+  default_prompt: "Use $audio-deduplicate to remove consecutive repeated words and phrases from this WAV or MP3 file."
+
+policy:
+  allow_implicit_invocation: true

@@ -5,6 +5,10 @@ description: Match transcript or scene intents to semantically indexed image/vid
 
 # Semantic Asset Mapper
 
+## Script Environment Rule
+
+Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+
 ## Goal
 
 Map the spoken content and scene intent of a new video to the best matching assets. This skill decides which asset appears when and why.

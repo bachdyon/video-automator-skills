@@ -1,0 +1,7 @@
+interface:
+  display_name: "Semantic Asset Mapper"
+  short_description: "Map transcript scenes to visual assets"
+  default_prompt: "Use $semantic-asset-mapper to match this transcript or scene intent list to indexed image and video assets."
+
+policy:
+  allow_implicit_invocation: true

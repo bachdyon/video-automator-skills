@@ -1,0 +1,7 @@
+interface:
+  display_name: "Video Production Orchestrator"
+  short_description: "Coordinate the full video pipeline"
+  default_prompt: "Use $video-production-orchestrator to coordinate the full short-form video pipeline for this request."
+
+policy:
+  allow_implicit_invocation: true

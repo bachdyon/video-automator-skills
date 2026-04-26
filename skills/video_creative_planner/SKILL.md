@@ -11,6 +11,10 @@ Convert a user's new video idea into a structured creative plan that downstream 
 
 Use this skill when the user provides a topic, brief, product idea, campaign request, or rough script and wants a new TikTok/Reels/Shorts-style video built from it.
 
+## Script Environment Rule
+
+Before running any script as part of this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+
 ## Inputs
 
 - User request or creative brief.

@@ -5,6 +5,10 @@ description: Use OpenAI Whisper or compatible transcription APIs to produce TOML
 
 # OpenAI Whisper Word Timestamps
 
+## Script Environment Rule
+
+Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Confirm `OPENAI_API_KEY` exists and pass `.env` with `--env-file`; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+
 ## Goal
 
 Transcribe narration audio into sentence and word timestamps for subtitle generation, scene alignment, and semantic asset mapping.
@@ -92,6 +96,7 @@ Use the bundled script for deterministic API calls and TOML normalization:
 python skills/openai_whisper_word_timestamps/scripts/transcribe_word_timestamps.py \
   --audio source/voice.wav \
   --output source/transcript_word_level.toml \
+  --env-file .env \
   --language vi
 ```
 
@@ -101,6 +106,7 @@ For a job-scoped run:
 python skills/openai_whisper_word_timestamps/scripts/transcribe_word_timestamps.py \
   --audio jobs/<job_id>/source/voice.wav \
   --output jobs/<job_id>/source/transcript_word_level.toml \
+  --env-file .env \
   --language vi
 ```
 

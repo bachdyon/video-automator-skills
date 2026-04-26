@@ -5,6 +5,10 @@ description: Convert VDS, creative plan, transcript, and semantic asset mapping 
 
 # Video Render Plan Builder
 
+## Script Environment Rule
+
+Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+
 ## Goal
 
 Create the concrete edit decision list used by a renderer. This skill answers how each mapped asset should be edited.

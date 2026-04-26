@@ -1,0 +1,7 @@
+interface:
+  display_name: "Video Render Plan Builder"
+  short_description: "Build TOML render edit decision lists"
+  default_prompt: "Use $video-render-plan-builder to convert the creative plan, transcript, assets, and style spec into a TOML render plan."
+
+policy:
+  allow_implicit_invocation: true

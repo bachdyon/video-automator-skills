@@ -1,0 +1,7 @@
+interface:
+  display_name: "AusyncLab Voice"
+  short_description: "Generate narration with AusyncLab voices"
+  default_prompt: "Use $ausynclab-voice to choose a suitable AusyncLab voice and generate narration audio."
+
+policy:
+  allow_implicit_invocation: true

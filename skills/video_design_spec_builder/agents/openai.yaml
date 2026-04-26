@@ -1,0 +1,7 @@
+interface:
+  display_name: "Video Design Spec Builder"
+  short_description: "Build reusable video style specs"
+  default_prompt: "Use $video-design-spec-builder to build a reusable Video Design Specification from this source video."
+
+policy:
+  allow_implicit_invocation: true

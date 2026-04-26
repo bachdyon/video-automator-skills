@@ -43,6 +43,22 @@ def toml_escape(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
+def format_sentences_multiline(text: str) -> str:
+    """Split a paragraph into one-sentence-per-line for readable TOML/MD output.
+
+    Splits on `.`, `?`, `!`, `…` followed by whitespace. Preserves trailing
+    punctuation. Collapses internal whitespace inside each sentence.
+    Empty input → empty string.
+    """
+    if not text:
+        return ""
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    if not cleaned:
+        return ""
+    parts = re.split(r"(?<=[.!?…])\s+", cleaned)
+    return "\n".join(part.strip() for part in parts if part.strip())
+
+
 def toml_value(value: Any) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"

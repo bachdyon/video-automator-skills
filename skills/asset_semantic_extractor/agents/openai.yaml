@@ -1,0 +1,7 @@
+interface:
+  display_name: "Asset Semantic Extractor"
+  short_description: "Index visual assets for video reuse"
+  default_prompt: "Use $asset-semantic-extractor to analyze these image or video assets and produce a TOML semantic index."
+
+policy:
+  allow_implicit_invocation: true

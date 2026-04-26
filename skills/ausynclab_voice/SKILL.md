@@ -5,6 +5,10 @@ description: Work with AusyncLab voice and Text-to-Speech APIs to list voices, r
 
 # AusyncLab Voice
 
+## Script Environment Rule
+
+Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Confirm `AUSYNCLAB_API_KEY` exists, and confirm `AUSYNCLAB_VOICE_ID` or `--voice-id` before synthesis. Pass `.env` with `--env-file`; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+
 ## Goal
 
 Manage voice selection and generate narration audio through AusyncLab.
@@ -33,7 +37,7 @@ X-API-Key: <api key>
 
 ## Inputs
 
-- API key from `.env`, preferably job-scoped `jobs/<job_id>/source/.env`.
+- API key from repo-root `.env`.
 - Script text from `source/creative_plan.toml` or direct user input.
 - Optional preferred voice config from `.env` in the repo root, beside `skills/`.
 
@@ -120,15 +124,15 @@ text_hash = "optional"
 Use the bundled script instead of rewriting API calls:
 
 ```bash
-python skills/ausynclab_voice/scripts/ausynclab_voice.py list --output source/voices.toml
-python skills/ausynclab_voice/scripts/ausynclab_voice.py recommend --language vi --use-case NARRATION --save-preference
-python skills/ausynclab_voice/scripts/ausynclab_voice.py synthesize --creative-plan source/creative_plan.toml
+python skills/ausynclab_voice/scripts/ausynclab_voice.py --env-file .env list --output source/voices.toml
+python skills/ausynclab_voice/scripts/ausynclab_voice.py --env-file .env recommend --language vi --use-case NARRATION --save-preference
+python skills/ausynclab_voice/scripts/ausynclab_voice.py --env-file .env synthesize --creative-plan source/creative_plan.toml
 ```
 
 For a job-scoped run:
 
 ```bash
-python skills/ausynclab_voice/scripts/ausynclab_voice.py synthesize \
+python skills/ausynclab_voice/scripts/ausynclab_voice.py --env-file .env synthesize \
   --creative-plan jobs/<job_id>/source/creative_plan.toml \
   --output-audio jobs/<job_id>/source/voice.wav \
   --output jobs/<job_id>/source/voice_selection.toml

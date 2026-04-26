@@ -1,0 +1,7 @@
+interface:
+  display_name: "Video Job Manager"
+  short_description: "Manage isolated video pipeline jobs"
+  default_prompt: "Use $video-job-manager to create or update an isolated video production job for this request."
+
+policy:
+  allow_implicit_invocation: true

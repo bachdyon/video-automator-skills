@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Word Keep Editor</title>
+    <style>
+      :root {
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
+      html {
+        background: #101217 !important;
+        color: #e6e9ef !important;
+      }
+      body {
+        margin: 0;
+        padding: 20px;
+        background: #101217 !important;
+        color: #e6e9ef !important;
+      }
+      .container {
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 22px;
+      }
+      .sub {
+        margin: 0 0 20px;
+        color: #b8c0cc;
+      }
+      .panel {
+        background: #161a22;
+        border: 1px solid #2a3040;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 12px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      button,
+      input[type="file"]::file-selector-button {
+        border: 1px solid #3b4760;
+        background: #253049;
+        color: #ecf2ff;
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: #1f2430;
+      }
+      .danger {
+        background: #522737;
+        border-color: #774054;
+      }
+      .good {
+        background: #244b34;
+        border-color: #3a7450;
+      }
+      .stats {
+        font-size: 14px;
+        color: #b7c5d8;
+      }
+      #dropzone {
+        border: 1px dashed #45608e;
+        border-radius: 10px;
+        padding: 18px;
+        text-align: center;
+        color: #a6b8d8;
+      }
+      #dropzone.dragover {
+        border-color: #6d95db;
+        background: #1a2437;
+      }
+      #tokens {
+        line-height: 2.1;
+      }
+      .token {
+        display: inline-block;
+        margin: 2px 4px 2px 0;
+        padding: 1px 7px;
+        border-radius: 999px;
+        border: 1px solid #475164;
+        background: #1e2634;
+        cursor: pointer;
+        user-select: none;
+      }
+      .token.selected {
+        outline: 2px solid #7fa3f8;
+      }
+      .token.removed {
+        text-decoration: line-through;
+        opacity: 0.5;
+        background: #3a2330;
+        border-color: #684055;
+      }
+      .hint {
+        color: #9eb0c8;
+        font-size: 13px;
+      }
+      code {
+        background: #20293a;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div style="background:#ffef99;color:#111;padding:8px 10px;border-radius:8px;margin-bottom:10px;font-size:13px">
+        Nếu bạn thấy dòng này, HTML/CSS đã tải thành công. Nếu vẫn trắng, hãy hard refresh: Cmd+Shift+R.
+      </div>
+      <h1>Word Keep Editor</h1>
+      <p class="sub">
+        Import <code>words_timestamp.toml</code>, chọn từ muốn bỏ (set <code>keep=false</code>) rồi export lại.
+      </p>
+
+      <div class="panel">
+        <div class="row">
+          <input id="fileInput" type="file" accept=".toml,text/plain" />
+          <button id="openDirect" class="secondary">Mở file trực tiếp (edit tại chỗ)</button>
+          <button id="resetKeep" class="secondary">Reset keep=true toàn bộ</button>
+          <button id="hideRemoved" class="secondary">Ẩn/Hiện từ đã bỏ</button>
+        </div>
+        <p id="fileMode" class="hint" style="margin-top: 8px">Chế độ hiện tại: import thủ công (cần Export để lưu).</p>
+        <div id="dropzone" style="margin-top: 10px">
+          Kéo thả <code>words_timestamp.toml</code> vào đây để mở nhanh.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="row">
+          <button id="markRemove" class="danger">Xóa từ đã chọn (keep=false)</button>
+          <button id="markKeep" class="good">Giữ từ đã chọn (keep=true)</button>
+          <button id="clearSelection" class="secondary">Bỏ chọn</button>
+        </div>
+        <p class="hint">
+          Mẹo: Click để chọn 1 từ, Shift+Click để chọn đoạn, phím Delete để bỏ từ đã chọn.
+        </p>
+        <div id="stats" class="stats">Chưa có file.</div>
+      </div>
+
+      <div class="panel">
+        <div id="tokens"></div>
+      </div>
+
+      <div class="panel">
+        <div class="row">
+          <button id="saveDirect" class="good">Lưu đè file gốc</button>
+          <button id="exportWords">Export words_timestamp.toml</button>
+        </div>
+        <p class="hint">
+          Khuyến nghị: dùng <b>Mở file trực tiếp</b> + <b>Lưu đè file gốc</b> để không cần download/copy.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      const state = {
+        metadata: {},
+        words: [],
+        selected: new Set(),
+        anchorIndex: null,
+        hideRemoved: false,
+        dragSelecting: false,
+        dragAnchorIndex: null,
+        fileHandle: null,
+        loadedFileName: "",
+      };
+
+      const fileInput = document.getElementById("fileInput");
+      const tokensEl = document.getElementById("tokens");
+      const statsEl = document.getElementById("stats");
+      const dropzone = document.getElementById("dropzone");
+      const fileModeEl = document.getElementById("fileMode");
+      const hasFileSystemAccess = typeof window.showOpenFilePicker === "function";
+
+      function parseTomlValue(raw) {
+        const value = raw.trim();
+        if (value === "true") return true;
+        if (value === "false") return false;
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+          return value.slice(1, -1).replace(/\\"/g, '"');
+        }
+        const number = Number(value);
+        if (!Number.isNaN(number)) return number;
+        return value;
+      }
+
+      function parseWordsTimestampToml(text) {
+        const lines = text.split(/\r?\n/);
+        const metadata = {};
+        const words = [];
+        let section = "";
+        let currentWord = null;
+
+        for (const lineRaw of lines) {
+          const line = lineRaw.trim();
+          if (!line || line.startsWith("#")) continue;
+          if (line === "[metadata]") {
+            section = "metadata";
+            currentWord = null;
+            continue;
+          }
+          if (line === "[[words]]") {
+            section = "words";
+            if (currentWord) words.push(currentWord);
+            currentWord = { keep: true };
+            continue;
+          }
+          const eqIdx = line.indexOf("=");
+          if (eqIdx <= 0) continue;
+          const key = line.slice(0, eqIdx).trim();
+          const rawValue = line.slice(eqIdx + 1);
+          const parsed = parseTomlValue(rawValue);
+
+          if (section === "metadata") {
+            metadata[key] = parsed;
+          } else if (section === "words" && currentWord) {
+            currentWord[key] = parsed;
+          }
+        }
+        if (currentWord) words.push(currentWord);
+        return { metadata, words };
+      }
+
+      function escapeTomlString(value) {
+        return `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+      }
+
+      function buildWordsToml() {
+        const lines = [];
+        lines.push("[metadata]");
+        const metadata = { ...state.metadata, mode: "words_keep_review_manual" };
+        for (const [key, value] of Object.entries(metadata)) {
+          if (typeof value === "boolean") lines.push(`${key} = ${value ? "true" : "false"}`);
+          else if (typeof value === "number") lines.push(`${key} = ${value}`);
+          else lines.push(`${key} = ${escapeTomlString(value)}`);
+        }
+        lines.push("");
+        for (const word of state.words) {
+          lines.push("[[words]]");
+          lines.push(`id = ${escapeTomlString(word.id || "")}`);
+          lines.push(`word = ${escapeTomlString(word.word || "")}`);
+          lines.push(`start = ${Number(word.start || 0).toFixed(3)}`);
+          lines.push(`end = ${Number(word.end || 0).toFixed(3)}`);
+          lines.push(`keep = ${word.keep ? "true" : "false"}`);
+          lines.push("");
+        }
+        return lines.join("\n");
+      }
+
+      function downloadText(filename, content) {
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function renderStats() {
+        if (!state.words.length) {
+          statsEl.textContent = "Chưa có file.";
+          return;
+        }
+        const kept = state.words.filter((w) => w.keep).length;
+        const removed = state.words.length - kept;
+        statsEl.textContent = `Tổng ${state.words.length} từ | keep=true: ${kept} | keep=false: ${removed} | selected: ${state.selected.size}`;
+      }
+
+      function updateFileMode() {
+        if (state.fileHandle) {
+          fileModeEl.textContent = `Chế độ hiện tại: edit trực tiếp file gốc (${state.loadedFileName || "unknown"}).`;
+        } else {
+          fileModeEl.textContent = "Chế độ hiện tại: import thủ công (cần Export để lưu).";
+        }
+      }
+
+      function renderWords() {
+        tokensEl.innerHTML = "";
+        state.words.forEach((word, index) => {
+          if (state.hideRemoved && !word.keep) return;
+          const span = document.createElement("span");
+          span.className = "token";
+          if (!word.keep) span.classList.add("removed");
+          if (state.selected.has(index)) span.classList.add("selected");
+          span.textContent = word.word;
+          const startText =
+            word.start !== null && word.start !== undefined && typeof word.start.toFixed === "function"
+              ? word.start.toFixed(3)
+              : String(word.start);
+          const endText =
+            word.end !== null && word.end !== undefined && typeof word.end.toFixed === "function"
+              ? word.end.toFixed(3)
+              : String(word.end);
+          span.title = `${startText}s - ${endText}s`;
+          span.addEventListener("mousedown", (event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
+
+            if (event.shiftKey && state.anchorIndex !== null) {
+              const start = Math.min(state.anchorIndex, index);
+              const end = Math.max(state.anchorIndex, index);
+              state.selected.clear();
+              for (let i = start; i <= end; i += 1) state.selected.add(i);
+              renderWords();
+              renderStats();
+              return;
+            }
+
+            if (!(event.metaKey || event.ctrlKey)) {
+              state.selected.clear();
+            }
+            state.selected.add(index);
+            state.anchorIndex = index;
+            state.dragSelecting = true;
+            state.dragAnchorIndex = index;
+            renderWords();
+            renderStats();
+          });
+
+          span.addEventListener("mouseenter", () => {
+            if (!state.dragSelecting || state.dragAnchorIndex === null) return;
+            const start = Math.min(state.dragAnchorIndex, index);
+            const end = Math.max(state.dragAnchorIndex, index);
+            state.selected.clear();
+            for (let i = start; i <= end; i += 1) state.selected.add(i);
+            renderWords();
+            renderStats();
+          });
+
+          span.addEventListener("click", (event) => {
+            if (event.shiftKey && state.anchorIndex !== null) {
+              const start = Math.min(state.anchorIndex, index);
+              const end = Math.max(state.anchorIndex, index);
+              state.selected.clear();
+              for (let i = start; i <= end; i += 1) state.selected.add(i);
+            } else if (event.metaKey || event.ctrlKey) {
+              if (state.selected.has(index)) state.selected.delete(index);
+              else state.selected.add(index);
+              state.anchorIndex = index;
+            } else {
+              state.selected.clear();
+              state.selected.add(index);
+              state.anchorIndex = index;
+            }
+            renderWords();
+            renderStats();
+          });
+          span.addEventListener("dblclick", () => {
+            state.words[index].keep = !state.words[index].keep;
+            renderWords();
+            renderStats();
+          });
+          tokensEl.appendChild(span);
+        });
+      }
+
+      function setKeepForSelected(keep) {
+        for (const idx of state.selected) {
+          if (state.words[idx]) state.words[idx].keep = keep;
+        }
+        renderWords();
+        renderStats();
+      }
+
+      function loadParsedData(parsed) {
+        if (!Array.isArray(parsed.words) || parsed.words.length === 0) {
+          alert("File TOML không có [[words]] hợp lệ.");
+          return false;
+        }
+        state.metadata = parsed.metadata || {};
+        state.words = parsed.words.map((word, idx) => ({
+          id: String(word.id || `W_${String(idx + 1).padStart(6, "0")}`),
+          word: String(word.word || word.text || "").trim(),
+          start: Number(word.start || 0),
+          end: Number(word.end || 0),
+          keep: Boolean(word.keep !== undefined && word.keep !== null ? word.keep : true),
+        }));
+        state.selected.clear();
+        state.anchorIndex = null;
+        renderWords();
+        renderStats();
+        updateFileMode();
+        return true;
+      }
+
+      function handleTomlFile(file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = parseWordsTimestampToml(String(reader.result || ""));
+            state.fileHandle = null;
+            state.loadedFileName = file && file.name ? file.name : "";
+            loadParsedData(parsed);
+          } catch (error) {
+            console.error(error);
+            alert("Không đọc được file TOML. Vui lòng kiểm tra định dạng.");
+          }
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      async function openTomlDirect() {
+        if (!hasFileSystemAccess) {
+          alert("Trình duyệt hiện tại chưa hỗ trợ edit file trực tiếp. Vui lòng dùng Chrome/Edge mới.");
+          return;
+        }
+        try {
+          const handles = await window.showOpenFilePicker({
+            types: [{ description: "TOML files", accept: { "text/plain": [".toml"] } }],
+            excludeAcceptAllOption: false,
+            multiple: false,
+          });
+          if (!handles || !handles.length) return;
+          const handle = handles[0];
+          const file = await handle.getFile();
+          const text = await file.text();
+          const parsed = parseWordsTimestampToml(text);
+          state.fileHandle = handle;
+          state.loadedFileName = file.name || "";
+          loadParsedData(parsed);
+        } catch (error) {
+          if (error && error.name === "AbortError") return;
+          console.error(error);
+          alert("Không mở được file trực tiếp.");
+        }
+      }
+
+      async function saveTomlDirect() {
+        if (!state.words.length) {
+          alert("Chưa có dữ liệu để lưu.");
+          return;
+        }
+        if (!state.fileHandle) {
+          alert("Bạn chưa mở file ở chế độ trực tiếp. Hãy bấm 'Mở file trực tiếp'.");
+          return;
+        }
+        try {
+          const writable = await state.fileHandle.createWritable();
+          await writable.write(buildWordsToml());
+          await writable.close();
+          alert("Đã lưu trực tiếp vào file gốc.");
+        } catch (error) {
+          console.error(error);
+          alert("Lưu trực tiếp thất bại. Kiểm tra quyền file rồi thử lại.");
+        }
+      }
+
+      fileInput.addEventListener("change", (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (file) handleTomlFile(file);
+      });
+
+      dropzone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        dropzone.classList.add("dragover");
+      });
+      dropzone.addEventListener("dragleave", () => {
+        dropzone.classList.remove("dragover");
+      });
+      dropzone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        dropzone.classList.remove("dragover");
+        const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+        if (file) handleTomlFile(file);
+      });
+
+      document.getElementById("openDirect").addEventListener("click", () => {
+        openTomlDirect();
+      });
+
+      document.getElementById("markRemove").addEventListener("click", () => setKeepForSelected(false));
+      document.getElementById("markKeep").addEventListener("click", () => setKeepForSelected(true));
+      document.getElementById("clearSelection").addEventListener("click", () => {
+        state.selected.clear();
+        renderWords();
+        renderStats();
+      });
+      document.getElementById("resetKeep").addEventListener("click", () => {
+        for (const word of state.words) word.keep = true;
+        state.selected.clear();
+        renderWords();
+        renderStats();
+      });
+      document.getElementById("hideRemoved").addEventListener("click", () => {
+        state.hideRemoved = !state.hideRemoved;
+        renderWords();
+      });
+      document.getElementById("exportWords").addEventListener("click", () => {
+        if (!state.words.length) return alert("Chưa có dữ liệu để export.");
+        downloadText("words_timestamp.toml", buildWordsToml());
+      });
+      document.getElementById("saveDirect").addEventListener("click", () => {
+        saveTomlDirect();
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Delete" || event.key === "Backspace") {
+          if (!state.selected.size) return;
+          event.preventDefault();
+          setKeepForSelected(false);
+        }
+      });
+
+      window.addEventListener("mouseup", () => {
+        state.dragSelecting = false;
+        state.dragAnchorIndex = null;
+      });
+
+      if (!hasFileSystemAccess) {
+        document.getElementById("openDirect").disabled = true;
+        document.getElementById("saveDirect").disabled = true;
+      }
+      updateFileMode();
+    </script>
+  </body>
+</html>
