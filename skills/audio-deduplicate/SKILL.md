@@ -88,23 +88,51 @@ keep = true
 
 ## Step 4 – PHASE 1: Semantic rewrite (AI)
 
-### Trước khi viết: load context
+### Trước khi viết: load context + pre-flight pivot scan
 
 - Mở TOML, đọc TOÀN BỘ `reconstructed_article.text` (1 câu/dòng).
 - Tự xác định "ý chính" của bài (5–10 ý) trước khi rewrite, để khỏi quên giữa chừng.
+- **Pre-flight pivot scan (BẮT BUỘC)**: Quét tuần tự cặp câu liền kề. Với mỗi cụm 2-5 từ liên tiếp xuất hiện ≥2 lần ở các câu liền kề, đánh dấu là **"candidate restart pivot"**. Với mỗi pivot:
+  1. Câu trước (A) có kết thúc trọn ý không? (chủ-vị đầy đủ + dấu kết câu hợp lý)
+  2. Câu sau (B) có kết thúc trọn ý không? Có chứa phần đóng câu (?, !, kết luận, vị ngữ chính) không?
+  3. Nếu **A cụt + B chứa phần đóng** → đây là **mid-sentence restart** → cần MERGE (xem T-restart-mid).
 
 ### Decision table (gặp X → làm Y)
 
 | Tình huống ASR | Hành động trong rewrite |
 | --- | --- |
 | Lặp ý 2+ lần | Giữ 1 phiên bản đầy đủ thông tin nhất |
-| Restart câu (`thứ 3 là phải báo... thứ 3 là phải báo cho quản lý...`) | Giữ bản hoàn chỉnh, bỏ bản nháp |
+| Restart toàn câu (`thứ 3 là phải báo... thứ 3 là phải báo cho quản lý...`) | Giữ bản hoàn chỉnh, bỏ bản nháp |
+| **Mid-sentence restart (pivot-phrase restart)** — câu A cụt ở pivot, câu B lặp pivot rồi nối phần đóng câu (`...xan lớp mặt bằng. Cái công việc xan lớp mặt bằng này thì nó sẽ như thế nào?`) | **MERGE**: giữ `prefix(A) + suffix(B)`, bỏ pivot ở câu B. Output: `prefix(A) + " " + suffix sau pivot ở B` |
 | Vấp từ (`nhưng nhưng`, `về... về`) | Giữ 1 lần |
 | Câu mở lặp + triển khai (`May là có người. May là mình với bố mình...`) | Giữ câu giàu thông tin hơn |
 | Noise đa ngôn ngữ / tiếng vô nghĩa | Bỏ |
 | Câu ngắn hơn nhưng cùng ý với câu dài hơn | Giữ câu dài (đầy đủ ý) |
 | Typo ASR (`tuyết đối`, `bế tông`) | KHÔNG sửa (Phase 2 cần khớp token gốc) |
 | Câu hoàn chỉnh không lặp | Giữ nguyên |
+
+### Mid-sentence restart — ví dụ chuẩn
+
+Verbatim:
+```
+Dân Vân Phòng ... bỏ phố về quê ... cụ thể là xan lớp mặt bằng.
+Cái công việc xan lớp mặt bằng này thì nó sẽ như thế nào?
+```
+
+Pivot trùng = `xan lớp mặt bằng`. Câu A cụt (ý chưa hoàn chỉnh — speaker dự định hỏi tiếp). Câu B = `[pivot] thì nó sẽ như thế nào?` = phần đóng câu hỏi.
+
+✘ **WRONG** (giữ 2 câu rời):
+```
+Dân Vân Phòng ... cụ thể là xan lớp mặt bằng.
+Cái công việc xan lớp mặt bằng này thì nó sẽ như thế nào?
+```
+
+✓ **RIGHT** (MERGE: prefix A + suffix B):
+```
+Dân Vân Phòng ... cụ thể là xan lớp mặt bằng thì nó sẽ như thế nào?
+```
+
+Phase 2 ranges tương ứng: bỏ cụm pivot ở câu B (`Cái công việc xan lớp mặt bằng này` = W_033-W_040), giữ `thì nó sẽ như thế nào?` (W_041-W_046).
 
 ### Anti-patterns
 
@@ -113,6 +141,9 @@ keep = true
 - ✘ Sửa typo ASR thành chính tả chuẩn.
 - ✘ Biên tập thành văn viết (giữ giọng văn nói).
 - ✘ Dùng inline string 1 dòng dài; PHẢI multi-line `"""..."""`.
+- ✘ Giữ 2 câu rời chỉ vì ASR đặt dấu chấm giữa câu (xem mid-sentence restart).
+- ✘ Bỏ qua pre-flight pivot scan; nếu thấy pivot 2-5 từ trùng giữa 2 câu liền kề mà không kiểm tra MERGE → coi như chưa làm Phase 1.
+- ✘ Để cùng 1 pivot xuất hiện ≥2 lần trong rewrite (trừ trường hợp ngữ nghĩa thực sự khác).
 
 ### Output format BẮT BUỘC
 
@@ -154,6 +185,9 @@ Nhưng mà nói về kịp nạn thì chắc là không ở đâu nhiều như n
 - [ ] `reconstructed_article_rewrite.text` non-empty và ở dạng `"""..."""` multi-line.
 - [ ] Mọi ý chính của `reconstructed_article` xuất hiện trong rewrite (không thiếu thông tin).
 - [ ] Không thêm fact/từ mới, không đảo thứ tự, không sửa typo ASR.
+- [ ] **Sentence-end check**: Mỗi câu rewrite kết thúc trọn ý (chủ-vị đầy đủ + dấu kết câu hợp lý). Nếu 1 câu rewrite "cụt" và câu sau bắt đầu bằng pivot trùng → quay lại MERGE.
+- [ ] **Pivot-once rule**: Liệt kê tất cả pivot 2-5 từ xuất hiện ≥2 lần trong rewrite; mỗi pivot phải có lý do ngữ nghĩa rõ ràng (ví dụ: chủ đề thực sự được nhắc lại). Nếu không → còn nghi ngờ chưa MERGE.
+- [ ] **Pre-flight pivot scan đã xử lý**: Mỗi candidate pivot đã được phân loại thành 1 trong: `[merge | drop-restart | keep-both-distinct-meaning]`.
 
 ## Step 5 – PHASE 2: Map keep flags (AI + script)
 

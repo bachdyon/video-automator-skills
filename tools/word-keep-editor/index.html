@@ -167,6 +167,8 @@
     <script>
       const state = {
         metadata: {},
+        article: null,
+        articleRewrite: null,
         words: [],
         selected: new Set(),
         anchorIndex: null,
@@ -200,14 +202,55 @@
         const lines = text.split(/\r?\n/);
         const metadata = {};
         const words = [];
+        let article = null;
+        let articleRewrite = null;
         let section = "";
         let currentWord = null;
+        let multiline = null;
+
+        const targetForKey = (key) => {
+          if (section === "metadata") return metadata;
+          if (section === "reconstructed_article") {
+            article = article || {};
+            return article;
+          }
+          if (section === "reconstructed_article_rewrite") {
+            articleRewrite = articleRewrite || {};
+            return articleRewrite;
+          }
+          if (section === "words" && currentWord) return currentWord;
+          return null;
+        };
 
         for (const lineRaw of lines) {
+          if (multiline) {
+            const closeIdx = lineRaw.indexOf('"""');
+            if (closeIdx >= 0) {
+              const tail = lineRaw.slice(0, closeIdx);
+              if (multiline.value.length) multiline.value += "\n";
+              if (tail.length) multiline.value += tail;
+              multiline.target[multiline.key] = multiline.value;
+              multiline = null;
+            } else {
+              if (multiline.value.length) multiline.value += "\n";
+              multiline.value += lineRaw;
+            }
+            continue;
+          }
           const line = lineRaw.trim();
           if (!line || line.startsWith("#")) continue;
           if (line === "[metadata]") {
             section = "metadata";
+            currentWord = null;
+            continue;
+          }
+          if (line === "[reconstructed_article]") {
+            section = "reconstructed_article";
+            currentWord = null;
+            continue;
+          }
+          if (line === "[reconstructed_article_rewrite]") {
+            section = "reconstructed_article_rewrite";
             currentWord = null;
             continue;
           }
@@ -220,39 +263,89 @@
           const eqIdx = line.indexOf("=");
           if (eqIdx <= 0) continue;
           const key = line.slice(0, eqIdx).trim();
-          const rawValue = line.slice(eqIdx + 1);
-          const parsed = parseTomlValue(rawValue);
+          const rawValue = line.slice(eqIdx + 1).trim();
 
-          if (section === "metadata") {
-            metadata[key] = parsed;
-          } else if (section === "words" && currentWord) {
-            currentWord[key] = parsed;
+          if (rawValue.startsWith('"""')) {
+            const target = targetForKey(key);
+            if (!target) continue;
+            const rest = rawValue.slice(3);
+            const closeIdx = rest.indexOf('"""');
+            if (closeIdx >= 0) {
+              target[key] = rest.slice(0, closeIdx);
+            } else {
+              multiline = { target, key, value: rest };
+            }
+            continue;
           }
+
+          const parsed = parseTomlValue(rawValue);
+          const target = targetForKey(key);
+          if (target) target[key] = parsed;
         }
         if (currentWord) words.push(currentWord);
-        return { metadata, words };
+        return { metadata, article, articleRewrite, words };
       }
 
       function escapeTomlString(value) {
         return `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
       }
 
+      function formatTomlNumber(value) {
+        const num = Number(value || 0);
+        const str = String(num);
+        return str.includes(".") || str.includes("e") || str.includes("E") ? str : `${str}.0`;
+      }
+
+      function formatTomlScalar(value) {
+        if (typeof value === "boolean") return value ? "true" : "false";
+        if (typeof value === "number") {
+          return Number.isInteger(value) ? String(value) : String(value);
+        }
+        return escapeTomlString(value);
+      }
+
+      function buildMultilineText(value) {
+        const text = value === undefined || value === null ? "" : String(value);
+        if (!text.length) return 'text = """\n"""';
+        const inner = text.replace(/^\n+/, "").replace(/\n+$/, "");
+        return `text = """\n${inner}\n"""`;
+      }
+
       function buildWordsToml() {
         const lines = [];
         lines.push("[metadata]");
-        const metadata = { ...state.metadata, mode: "words_keep_review_manual" };
-        for (const [key, value] of Object.entries(metadata)) {
-          if (typeof value === "boolean") lines.push(`${key} = ${value ? "true" : "false"}`);
-          else if (typeof value === "number") lines.push(`${key} = ${value}`);
-          else lines.push(`${key} = ${escapeTomlString(value)}`);
+        for (const [key, value] of Object.entries(state.metadata || {})) {
+          lines.push(`${key} = ${formatTomlScalar(value)}`);
         }
         lines.push("");
+        if (state.article) {
+          lines.push("[reconstructed_article]");
+          for (const [key, value] of Object.entries(state.article)) {
+            if (key === "text") {
+              lines.push(buildMultilineText(value));
+            } else {
+              lines.push(`${key} = ${formatTomlScalar(value)}`);
+            }
+          }
+          lines.push("");
+        }
+        if (state.articleRewrite) {
+          lines.push("[reconstructed_article_rewrite]");
+          for (const [key, value] of Object.entries(state.articleRewrite)) {
+            if (key === "text") {
+              lines.push(buildMultilineText(value));
+            } else {
+              lines.push(`${key} = ${formatTomlScalar(value)}`);
+            }
+          }
+          lines.push("");
+        }
         for (const word of state.words) {
           lines.push("[[words]]");
           lines.push(`id = ${escapeTomlString(word.id || "")}`);
           lines.push(`word = ${escapeTomlString(word.word || "")}`);
-          lines.push(`start = ${Number(word.start || 0).toFixed(3)}`);
-          lines.push(`end = ${Number(word.end || 0).toFixed(3)}`);
+          lines.push(`start = ${formatTomlNumber(word.start)}`);
+          lines.push(`end = ${formatTomlNumber(word.end)}`);
           lines.push(`keep = ${word.keep ? "true" : "false"}`);
           lines.push("");
         }
@@ -276,7 +369,13 @@
         }
         const kept = state.words.filter((w) => w.keep).length;
         const removed = state.words.length - kept;
-        statsEl.textContent = `Tổng ${state.words.length} từ | keep=true: ${kept} | keep=false: ${removed} | selected: ${state.selected.size}`;
+        const meta = state.metadata || {};
+        const metaParts = [];
+        if (meta.mode) metaParts.push(`mode=${meta.mode}`);
+        if (meta.rewrite_status) metaParts.push(`rewrite_status=${meta.rewrite_status}`);
+        if (meta.original_word_count !== undefined) metaParts.push(`original=${meta.original_word_count}`);
+        const metaLine = metaParts.length ? ` | ${metaParts.join(" | ")}` : "";
+        statsEl.textContent = `Tổng ${state.words.length} từ | keep=true: ${kept} | keep=false: ${removed} | selected: ${state.selected.size}${metaLine}`;
       }
 
       function updateFileMode() {
@@ -304,7 +403,7 @@
             word.end !== null && word.end !== undefined && typeof word.end.toFixed === "function"
               ? word.end.toFixed(3)
               : String(word.end);
-          span.title = `${startText}s - ${endText}s`;
+          span.title = `${word.id || `#${index + 1}`} | ${startText}s - ${endText}s`;
           span.addEventListener("mousedown", (event) => {
             if (event.button !== 0) return;
             event.preventDefault();
@@ -381,6 +480,8 @@
           return false;
         }
         state.metadata = parsed.metadata || {};
+        state.article = parsed.article || null;
+        state.articleRewrite = parsed.articleRewrite || null;
         state.words = parsed.words.map((word, idx) => ({
           id: String(word.id || `W_${String(idx + 1).padStart(6, "0")}`),
           word: String(word.word || word.text || "").trim(),
