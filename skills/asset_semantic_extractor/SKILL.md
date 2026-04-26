@@ -107,3 +107,70 @@ python skills/asset_semantic_extractor/scripts/probe_assets.py jobs/<job_id>/inp
 ```
 
 The script scans folders, identifies images/videos, reads duration/resolution/fps with `ffprobe` when available, optionally extracts video sample frames with `ffmpeg`, and writes a TOML scaffold. After this, use visual analysis to fill `summary`, `description`, `mood`, `semantic_tags`, and scene details.
+
+## Vision Analysis (required after the probe scaffold)
+
+The probe script only writes `TODO:` placeholders. Real semantic content must come from a multimodal LLM analyzing the sample frames in `source/asset_samples/`.
+
+Default vision provider: **Google Gemini** (vision-capable model, e.g. `gemini-3.1-flash-lite-preview` or `gemini-3-flash-preview`).
+
+### Required env keys
+
+`GEMINI_API_KEY` must exist and be non-empty in `.env`. If it is missing or empty:
+
+1. STOP. Do not fabricate scene descriptions, do not fall back to per-asset bulk text, and do not re-use the same description for every scene of one asset.
+2. Notify the user: `GEMINI_API_KEY` is required for asset semantic vision analysis.
+3. Ask the user to add it to `.env` (a stub line `GEMINI_API_KEY=` already exists in `env.example`).
+4. Resume only after the user confirms the key is set.
+
+### What to fill per scene
+
+For every `[[asset_scenes]]` (or `[[assets.scenes]]`) row in the scaffold, send the corresponding sample frame(s) to Gemini and write back UNIQUE, scene-specific content:
+
+- `description`: visual + factual first (subjects, action, environment, framing), then interpretive.
+- `subjects`, `actions`, `environment`: short noun/verb phrases from the actual frame.
+- `shot_type`, `camera_motion`, `composition`, `colors`: only if visually inferable.
+- `mood`: 1-3 lowercase tags.
+- `semantic_tags`: lowercase, stable vocabulary aligned with the creative plan / VDS when available.
+- `recommended_uses`, `avoid_uses`: short reuse hints (e.g. `["hook"]`, `["high energy transition"]`).
+
+Keep Vietnamese diacritics if the project language is `vi`. Do NOT asciify Vietnamese text.
+
+### Quality gate before saving
+
+Before writing the final `asset_semantics.toml`, verify:
+
+- No two scenes inside the same asset share an identical `description`.
+- No scene still contains the literal substring `TODO:`.
+- All `semantic_tags` are lowercase, no spaces (use `-` or `_`).
+- `privacy_notes` and `quality_notes` are filled when relevant (faces, license plates, audio leakage, shaky / overexposed segments).
+
+Failing the gate means re-run vision analysis on the offending scenes; do not ship a placeholder index downstream to `semantic-asset-mapper`.
+
+### Bundled vision script
+
+Use `analyze_with_gemini.py` to enrich the scaffold in place. It reads the existing TOML, batches sample frames per asset to Gemini Vision, and writes a TOML where every asset and scene has unique semantic content.
+
+```bash
+python skills/asset_semantic_extractor/scripts/analyze_with_gemini.py \
+  --input source/asset_semantics.toml \
+  --output source/asset_semantics.toml \
+  --sample-dir source/asset_samples \
+  --env-file .env \
+  --model gemini-3-flash-preview \
+  --strict
+```
+
+Job-scoped run:
+
+```bash
+python skills/asset_semantic_extractor/scripts/analyze_with_gemini.py \
+  --input jobs/<job_id>/source/asset_semantics.toml \
+  --output jobs/<job_id>/source/asset_semantics.toml \
+  --sample-dir jobs/<job_id>/source/asset_samples \
+  --env-file .env \
+  --model gemini-3-flash-preview \
+  --strict
+```
+
+The script aborts (exit code != 0) if `GEMINI_API_KEY` is missing, no sample frames exist for an asset, all configured Gemini models fail, or `--strict` is set and the quality gate finds duplicate descriptions / `TODO:` leftovers / non-kebab-case tags. Always rerun it (instead of editing the TOML by hand) when raw assets change.

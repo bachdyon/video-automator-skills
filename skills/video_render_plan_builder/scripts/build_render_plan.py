@@ -27,12 +27,28 @@ def infer_duration(mapping_rows: list[dict[str, Any]], transcript: dict[str, Any
     return round(max(candidates or [0.0]), 3)
 
 
+COVERAGE_TO_MOTION = {
+    "exact": "match_vds",
+    "slowdown": "slowdown",
+    "cutaway_subdivision": "match_vds",
+    "loop_fallback": "loop_to_fit",
+}
+
+
 def build_clips(mapping_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     clips: list[dict[str, Any]] = []
     for index, mapping in enumerate(mapping_rows, start=1):
         file_path = mapping.get("file_path") or ""
         suffix = Path(file_path).suffix.lower()
         clip_type = "image" if suffix in {".jpg", ".jpeg", ".png", ".webp", ".gif"} else "video"
+        coverage_strategy = str(mapping.get("coverage_strategy") or "").lower()
+        playback_rate = float(mapping.get("playback_rate") or 1.0)
+        if clip_type == "image":
+            motion = "slow_push_in"
+        elif coverage_strategy in COVERAGE_TO_MOTION:
+            motion = COVERAGE_TO_MOTION[coverage_strategy]
+        else:
+            motion = "match_vds"
         clips.append(
             {
                 "id": f"CLIP_{index:03d}",
@@ -46,7 +62,12 @@ def build_clips(mapping_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "fit": "cover",
                 "crop_anchor": "center",
                 "speed": 1.0,
-                "motion": "slow_push_in" if clip_type == "image" else "match_vds",
+                "playback_rate": round(playback_rate, 4),
+                "motion": motion,
+                "coverage_strategy": coverage_strategy or "exact",
+                "subdivision_role": str(mapping.get("subdivision_role") or "primary"),
+                "subdivision_index": int(mapping.get("subdivision_index") or 1),
+                "subdivision_total": int(mapping.get("subdivision_total") or 1),
                 "transition_in": "cut" if index == 1 else "soft_cut",
                 "transition_out": "soft_cut",
                 "color": "match_vds",
@@ -88,6 +109,15 @@ def build_overlays(creative: dict[str, Any]) -> list[dict[str, Any]]:
     return output
 
 
+OVERLAY_MAX_CHARS_BY_STYLE: dict[str, int] = {
+    "MAIN_TITLE": 22,
+    "PUNCH_TAG": 18,
+    "STAT_TAG": 14,
+    "SUBTITLE_BOLD": 32,
+    "QUOTE_TAG": 36,
+}
+
+
 def validate_plan(plan: dict[str, list[dict[str, Any]] | dict[str, Any]]) -> list[dict[str, str]]:
     warnings: list[dict[str, str]] = []
     clips = sorted(plan.get("clips", []), key=lambda row: float(row.get("timeline_start") or 0.0))  # type: ignore[arg-type]
@@ -113,6 +143,21 @@ def validate_plan(plan: dict[str, list[dict[str, Any]] | dict[str, Any]]) -> lis
             warnings.append({"code": "INVALID_SUBTITLE_RANGE", "message": f"subtitle has end <= start: {text[:40]}"})
         if len(text) > 90 and (end - start) < 2.5:
             warnings.append({"code": "SUBTITLE_TOO_DENSE", "message": f"subtitle may be too dense: {text[:40]}"})
+    for overlay in plan.get("overlays", []):  # type: ignore[union-attr]
+        style = str(overlay.get("style") or "MAIN_TITLE")
+        text = str(overlay.get("text") or "")
+        max_chars = OVERLAY_MAX_CHARS_BY_STYLE.get(style)
+        if max_chars and len(text) > max_chars:
+            warnings.append(
+                {
+                    "code": "OVERLAY_TEXT_TOO_LONG",
+                    "message": (
+                        f"{overlay.get('id')} ({style}) has {len(text)} chars > {max_chars} "
+                        f"limit; renderer will auto-shrink, but the planner should shorten "
+                        f"or split: {text[:60]!r}"
+                    ),
+                }
+            )
     return warnings
 
 

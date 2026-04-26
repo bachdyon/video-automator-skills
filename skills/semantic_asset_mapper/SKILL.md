@@ -43,8 +43,15 @@ jobs/<job_id>/source/semantic_mapping.toml
 3. Choose assets based on semantic fit, mood fit, shot type, visual continuity, and quality constraints.
 4. Prefer matching source video sub-scenes over entire clips.
 5. Use still images only when they fit the pacing or no stronger video exists.
-6. Fill gaps with the closest semantically compatible asset and mark the reason.
-7. Do not specify final crop, transitions, text animation, or render parameters; leave that to `video-render-plan-builder`.
+6. Produce a **baseline** 1-1 mapping: one best-fit `asset_scene` per scene_intent, with `start, end, source_start, source_end, fit_score, fit_labels`. Do NOT subdivide for coverage shortage; that is the job of `shot-coverage-planner`.
+7. Mark every row whose timeline duration exceeds source duration with `warnings += ["SOURCE_SHORTER_THAN_TIMELINE"]` so the next stage knows where to act.
+8. Do not specify final crop, transitions, text animation, or render parameters; leave that to `video-render-plan-builder`.
+
+## Coverage shortage handoff
+
+When `timeline_duration - best_source_duration > 0.5s`, do NOT loop, freeze, or auto-stitch cutaways here. Emit the row as-is with a `SOURCE_SHORTER_THAN_TIMELINE` warning and let `shot-coverage-planner` make the editorial decision (cutaway / slowdown / hold + Ken Burns) using the agent's creative judgement.
+
+The bundled script's `--no-cutaway` flag is the **default** in the new pipeline. The legacy heuristic cutaway algorithm is kept for backwards compatibility and can be re-enabled with `--legacy-cutaway`, but should not be used in production.
 
 ## Required Minimal Contract
 

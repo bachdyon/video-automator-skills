@@ -60,17 +60,23 @@ Use this skill when the user asks to create, regenerate, preview, or produce a c
    - Input: raw image/video assets.
    - Output: `jobs/<job_id>/source/asset_semantics.toml`.
 
-6. **Semantic Mapping**
+6. **Semantic Mapping (baseline 1-1)**
    - Use `semantic-asset-mapper`.
    - Input: creative plan + transcript + asset semantics + VDS.
-   - Output: `jobs/<job_id>/source/semantic_mapping.toml`.
+   - Output: `jobs/<job_id>/source/semantic_mapping.toml` (one best-fit asset per scene; rows with `SOURCE_SHORTER_THAN_TIMELINE` warnings are intentionally left for the next step).
 
-7. **Render Plan**
+7. **Shot Coverage Decisions (creative)**
+   - Use `shot-coverage-planner`.
+   - Input: baseline `semantic_mapping.toml` + asset semantics + creative plan + transcript.
+   - Process: run `detect_gaps.py` to produce `coverage_context.json`, the agent (this assistant) writes `coverage_decisions.json` applying the cutaway / slowdown / hold framework, then `apply_patch.py` rewrites `semantic_mapping.toml` with sub-clips.
+   - Output: revised `jobs/<job_id>/source/semantic_mapping.toml` plus `coverage_context.json` and `coverage_decisions.json` for traceability.
+
+8. **Render Plan**
    - Use `video-render-plan-builder`.
-   - Input: VDS + creative plan + transcript + semantic mapping.
+   - Input: VDS + creative plan + transcript + revised semantic mapping.
    - Output: `jobs/<job_id>/source/render_plan.toml`.
 
-8. **Render**
+9. **Render**
    - Use `video-renderer`, which must verify/install and load the official `$remotion-best-practices` skill before creating or updating the job-scoped Remotion project.
    - Input: render plan + media files.
    - Output: job-scoped Remotion project at `jobs/<job_id>/remotion/`, then `jobs/<job_id>/output/final_video.mp4`.
@@ -95,6 +101,8 @@ jobs/<job_id>/
     transcript_word_level.toml
     asset_semantics.toml
     semantic_mapping.toml
+    coverage_context.json
+    coverage_decisions.json
     render_plan.toml
   remotion/
     package.json
@@ -130,6 +138,7 @@ Before moving to the next step, verify:
 - Transcript covers the full voice duration.
 - Asset semantics cover all provided assets.
 - Semantic mapping is continuous and each row has `start`, `end`, `file_path`, and `reason`.
+- Every scene flagged in `coverage_context.json` has a matching decision in `coverage_decisions.json` (no silent skips).
 - Render plan references existing files only.
 - Final render exists and has audio.
 

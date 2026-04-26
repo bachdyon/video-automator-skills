@@ -152,6 +152,91 @@ def validate_mapping(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     return warnings
 
 
+def asset_scene_duration(asset_scene: dict[str, Any]) -> float:
+    start = float(asset_scene.get("start") or 0.0)
+    end = float(asset_scene.get("end") or 0.0)
+    duration = end - start
+    if duration > 0:
+        return duration
+    asset = asset_scene.get("asset") or {}
+    return float(asset.get("duration_seconds") or 0.0)
+
+
+def asset_max_end(asset_scene: dict[str, Any]) -> float:
+    """Return the maximum playable source position (asset duration cap)."""
+    asset = asset_scene.get("asset") or {}
+    asset_duration = float(asset.get("duration_seconds") or 0.0)
+    scene_end = float(asset_scene.get("end") or 0.0)
+    if asset_duration > 0:
+        return max(scene_end, asset_duration)
+    return scene_end
+
+
+def select_cutaway_sequence(
+    ranked: list[tuple[float, float, list[str], dict[str, Any]]],
+    needed_duration: float,
+    parent_asset_id: str,
+    min_subscene_duration: float,
+    min_score: float,
+) -> list[dict[str, Any]]:
+    """Greedy pick a sequence of asset_scenes to fill `needed_duration`.
+
+    Diversity heuristic:
+    - never reuse the same asset_scene_id within one parent scene_intent
+    - de-prioritize repeating the same asset_id back-to-back
+    - skip candidates with score below `min_score` (avoid totally unrelated cutaways)
+    """
+
+    selected: list[dict[str, Any]] = []
+    remaining = needed_duration
+    used_scene_ids: set[str] = set()
+    consumed_by_asset: dict[str, float] = {}
+
+    pool = [
+        {
+            "ranked_score": r[0],
+            "raw_score": r[1],
+            "labels": r[2],
+            "asset_scene": r[3],
+            "duration": asset_scene_duration(r[3]),
+            "max_end": asset_max_end(r[3]),
+        }
+        for r in ranked
+        if r[1] >= min_score and asset_scene_duration(r[3]) >= min_subscene_duration
+    ]
+
+    while remaining > min_subscene_duration and pool:
+        last_asset_id = selected[-1]["asset_scene"].get("asset_id") if selected else parent_asset_id
+
+        def diversity_key(item: dict[str, Any]) -> tuple[float, float]:
+            asset_id = item["asset_scene"].get("asset_id") or ""
+            penalty = 0.0
+            if asset_id == last_asset_id:
+                penalty += 0.25
+            penalty += 0.05 * consumed_by_asset.get(asset_id, 0.0)
+            return (item["ranked_score"] - penalty, item["raw_score"])
+
+        pool.sort(key=diversity_key, reverse=True)
+
+        pick = None
+        for cand in pool:
+            if cand["asset_scene"].get("id") in used_scene_ids:
+                continue
+            pick = cand
+            break
+
+        if pick is None:
+            break
+
+        used_scene_ids.add(pick["asset_scene"].get("id"))
+        asset_id = pick["asset_scene"].get("asset_id") or ""
+        consumed_by_asset[asset_id] = consumed_by_asset.get(asset_id, 0.0) + min(pick["duration"], remaining)
+        selected.append(pick)
+        remaining -= pick["duration"]
+
+    return selected
+
+
 def build(args: argparse.Namespace) -> None:
     creative = read_toml(args.creative_plan)
     transcript = read_toml(args.transcript) if args.transcript.exists() else {}
@@ -166,39 +251,153 @@ def build(args: argparse.Namespace) -> None:
     total_duration = float((transcript.get("metadata") or {}).get("duration_seconds") or 0.0)
     mappings: list[dict[str, Any]] = []
     used: dict[str, int] = {}
+
+    cutaway_threshold = float(getattr(args, "cutaway_threshold", 0.5) or 0.5)
+    min_subscene_duration = float(getattr(args, "min_subscene_duration", 0.8) or 0.8)
+    min_cutaway_score = float(getattr(args, "min_cutaway_score", 0.05) or 0.05)
+    enable_cutaway = bool(getattr(args, "legacy_cutaway", False))
+
+    map_counter = 0
+
     for index, scene in enumerate(scenes):
         start, end = scene_bounds(scene, transcript_sentences, index, len(scenes), total_duration)
-        ranked = []
+        scene_id = scene.get("id") or f"SC_{index + 1:02d}"
+        scene_duration = max(0.0, end - start)
+
+        ranked: list[tuple[float, float, list[str], dict[str, Any]]] = []
         for asset_scene in asset_scenes:
             asset_score, labels = score(scene, asset_scene)
             reuse_penalty = used.get(asset_scene.get("id"), 0) * 0.05
             ranked.append((asset_score - reuse_penalty, asset_score, labels, asset_scene))
         ranked.sort(key=lambda item: item[0], reverse=True)
-        _, fit_score, labels, selected = ranked[0]
-        used[selected.get("id")] = used.get(selected.get("id"), 0) + 1
-        reason = "Best available semantic match"
-        if labels:
-            reason += f" by {', '.join(labels)}"
-        if scene.get("visual_intent"):
-            reason += f" for: {scene.get('visual_intent')}"
-        mappings.append(
-            {
-                "id": f"MAP_{index + 1:03d}",
-                "scene_id": scene.get("id") or f"SC_{index + 1:02d}",
-                "asset_id": selected.get("asset_id") or "",
-                "asset_scene_id": selected.get("id") or "",
-                "start": round(start, 3),
-                "end": round(end, 3),
-                "file_path": selected.get("file_path") or "",
-                "source_start": float(selected.get("start") or 0.0),
-                "source_end": float(selected.get("end") or 0.0),
-                "fit_score": fit_score,
-                "fit_labels": labels,
-                "reason": reason,
-                "fallback": fit_score == 0.0,
-                "warnings": [],
-            }
-        )
+
+        _, best_fit_score, best_labels, best_selected = ranked[0]
+        best_max_end = asset_max_end(best_selected)
+        best_source_start = float(best_selected.get("start") or 0.0)
+        best_available_dur = max(0.0, best_max_end - best_source_start)
+
+        cutaway_chunks: list[dict[str, Any]] = []
+
+        if (
+            enable_cutaway
+            and scene_duration > best_available_dur + cutaway_threshold
+            and scene_duration > min_subscene_duration * 2
+        ):
+            needed_after_primary = scene_duration - best_available_dur
+            extra = select_cutaway_sequence(
+                [r for r in ranked if r[3].get("id") != best_selected.get("id")],
+                needed_after_primary + cutaway_threshold,
+                best_selected.get("asset_id") or "",
+                min_subscene_duration=min_subscene_duration,
+                min_score=min_cutaway_score,
+            )
+            if extra:
+                primary_chunk = {
+                    "ranked_score": ranked[0][0],
+                    "raw_score": best_fit_score,
+                    "labels": best_labels,
+                    "asset_scene": best_selected,
+                    "duration": best_available_dur,
+                    "max_end": best_max_end,
+                }
+                cutaway_chunks = [primary_chunk] + extra
+
+        if cutaway_chunks:
+            total_chunks = len(cutaway_chunks)
+            cursor = start
+            remaining = scene_duration
+            for sub_index, chunk in enumerate(cutaway_chunks):
+                is_last = sub_index == total_chunks - 1
+                chunk_dur = chunk["duration"]
+                take_dur = min(chunk_dur, remaining) if not is_last else remaining
+                if take_dur < min_subscene_duration and not is_last:
+                    take_dur = min(remaining, min_subscene_duration)
+                if is_last and take_dur > chunk_dur + cutaway_threshold:
+                    take_dur = chunk_dur
+
+                sub_start = cursor
+                sub_end = min(end, cursor + take_dur)
+                src_start = float(chunk["asset_scene"].get("start") or 0.0)
+                src_end = src_start + (sub_end - sub_start)
+                if src_end > chunk["max_end"]:
+                    src_end = chunk["max_end"]
+
+                map_counter += 1
+                used[chunk["asset_scene"].get("id")] = used.get(chunk["asset_scene"].get("id"), 0) + 1
+                role = "primary" if sub_index == 0 else f"cutaway_{sub_index}"
+                reason = (
+                    f"Cutaway chunk {sub_index + 1}/{total_chunks} for {scene_id}"
+                    f" — fills {scene_duration:.2f}s by stitching {total_chunks} different shots"
+                )
+                if scene.get("visual_intent"):
+                    reason += f" (intent: {scene.get('visual_intent')})"
+                warnings_row: list[str] = []
+                if (sub_end - sub_start) > (src_end - src_start) + 0.05:
+                    warnings_row.append("SUBCLIP_SHORT_SOURCE")
+
+                mappings.append(
+                    {
+                        "id": f"MAP_{map_counter:03d}",
+                        "scene_id": scene_id,
+                        "subdivision_role": role,
+                        "subdivision_index": sub_index + 1,
+                        "subdivision_total": total_chunks,
+                        "asset_id": chunk["asset_scene"].get("asset_id") or "",
+                        "asset_scene_id": chunk["asset_scene"].get("id") or "",
+                        "start": round(sub_start, 3),
+                        "end": round(sub_end, 3),
+                        "file_path": chunk["asset_scene"].get("file_path") or "",
+                        "source_start": round(src_start, 3),
+                        "source_end": round(src_end, 3),
+                        "fit_score": chunk["raw_score"],
+                        "fit_labels": chunk["labels"],
+                        "reason": reason,
+                        "fallback": chunk["raw_score"] == 0.0,
+                        "warnings": warnings_row,
+                    }
+                )
+                cursor = sub_end
+                remaining = max(0.0, end - cursor)
+                if remaining <= 0.001:
+                    break
+        else:
+            map_counter += 1
+            used[best_selected.get("id")] = used.get(best_selected.get("id"), 0) + 1
+            src_start = float(best_selected.get("start") or 0.0)
+            src_end_default = float(best_selected.get("end") or 0.0)
+            extended_src_end = max(src_end_default, src_start + scene_duration)
+            if extended_src_end > best_max_end:
+                extended_src_end = best_max_end
+            reason = "Best available semantic match"
+            if best_labels:
+                reason += f" by {', '.join(best_labels)}"
+            if scene.get("visual_intent"):
+                reason += f" for: {scene.get('visual_intent')}"
+            warnings_row = []
+            if scene_duration > (extended_src_end - src_start) + cutaway_threshold:
+                warnings_row.append("SOURCE_SHORTER_THAN_TIMELINE")
+            mappings.append(
+                {
+                    "id": f"MAP_{map_counter:03d}",
+                    "scene_id": scene_id,
+                    "subdivision_role": "primary",
+                    "subdivision_index": 1,
+                    "subdivision_total": 1,
+                    "asset_id": best_selected.get("asset_id") or "",
+                    "asset_scene_id": best_selected.get("id") or "",
+                    "start": round(start, 3),
+                    "end": round(end, 3),
+                    "file_path": best_selected.get("file_path") or "",
+                    "source_start": round(src_start, 3),
+                    "source_end": round(extended_src_end, 3),
+                    "fit_score": best_fit_score,
+                    "fit_labels": best_labels,
+                    "reason": reason,
+                    "fallback": best_fit_score == 0.0,
+                    "warnings": warnings_row,
+                }
+            )
+
     warnings = validate_mapping(mappings)
     write_toml_document(args.output, [("mappings", mappings), ("warnings", warnings)])
     print(f"wrote {args.output} with {len(mappings)} mappings and {len(warnings)} warnings")
@@ -222,6 +421,34 @@ def main() -> None:
     build_parser.add_argument("--transcript", type=Path, default=Path("source/transcript_word_level.toml"))
     build_parser.add_argument("--asset-semantics", type=Path, default=Path("source/asset_semantics.toml"))
     build_parser.add_argument("--output", type=Path, default=Path("source/semantic_mapping.toml"))
+    build_parser.add_argument(
+        "--cutaway-threshold",
+        type=float,
+        default=0.5,
+        help="Trigger subdivide when (timeline_dur - best_source_dur) > this many seconds.",
+    )
+    build_parser.add_argument(
+        "--min-subscene-duration",
+        type=float,
+        default=0.8,
+        help="Minimum duration per cutaway sub-clip in seconds.",
+    )
+    build_parser.add_argument(
+        "--min-cutaway-score",
+        type=float,
+        default=0.05,
+        help="Minimum semantic fit score required for a cutaway candidate.",
+    )
+    build_parser.add_argument(
+        "--no-cutaway",
+        action="store_true",
+        help="(Default behaviour now) Disable cutaway subdivide. Kept for back-compat with old scripts.",
+    )
+    build_parser.add_argument(
+        "--legacy-cutaway",
+        action="store_true",
+        help="Re-enable the deprecated heuristic cutaway algorithm. Production should use shot-coverage-planner instead.",
+    )
     build_parser.set_defaults(func=build)
     validate_parser = sub.add_parser("validate")
     validate_parser.add_argument("--mapping", type=Path, default=Path("source/semantic_mapping.toml"))

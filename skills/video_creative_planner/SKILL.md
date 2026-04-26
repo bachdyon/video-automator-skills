@@ -89,6 +89,30 @@ timing = "sync_with_scene_start"
 style_ref = "MAIN_TITLE"
 ```
 
+## Text Overlay Length Limits (1080×1920 vertical)
+
+On-screen text must fit within a safe box of ~880px on a 1080-wide canvas (≈82%). Each `style_ref` has a hard `max_chars` ceiling and a recommended sweet spot that keeps text on 1–2 lines without auto-shrink. **Vietnamese and other diacritic languages render ~10% wider than plain Latin; numbers count as 0.6 char each.**
+
+| `style_ref`      | `max_chars` (incl. spaces) | recommended | typical role           |
+| ---------------- | -------------------------: | ----------: | ---------------------- |
+| `MAIN_TITLE`     |                         22 |       12–16 | hook, reveal callout   |
+| `PUNCH_TAG`      |                         18 |       10–14 | punchline, uppercase   |
+| `STAT_TAG`       |                         14 |        6–10 | numbers, stats, prices |
+| `SUBTITLE_BOLD`  |                         32 |       18–26 | secondary callout      |
+| `QUOTE_TAG`      |                         36 |       22–30 | quoted phrases, italic |
+
+If a sentence exceeds `max_chars` for the chosen style, pick one of (in order):
+
+1. **Shorten / abbreviate** the wording while keeping the punch (e.g. `"Săn lấp mặt bằng = Xúc đất"` → `"Săn lấp = Xúc đất"`).
+2. **Split into two back-to-back overlays** with `start`/`end` chained (≥0.4s gap, same `style_ref` or paired styles).
+3. **Downgrade `style_ref`** to a smaller preset (`MAIN_TITLE` → `SUBTITLE_BOLD`, `PUNCH_TAG` → `QUOTE_TAG`) only if the role allows it.
+
+The renderer applies a defensive auto-shrink + word-break, but the planner is responsible for the *intended* fit. Overlays whose text exceeds `max_chars` will trigger a `OVERLAY_TEXT_TOO_LONG` warning from `video-render-plan-builder` and look small/squeezed at render time.
+
+## Subtitle Density Limits
+
+Subtitle pages (TikTok-style word highlight) target ≤ 26 characters per page; the renderer auto-splits longer pages, but the planner should keep each `voiceover` sentence speakable without 8+ short words back-to-back. Avoid extremely long compound numbers in narration (`"hai mươi ba triệu năm trăm nghìn"`); use overlay text instead and keep narration short.
+
 ## Quality Rules
 
 - The script must be speakable; avoid long nested clauses.
@@ -96,3 +120,4 @@ style_ref = "MAIN_TITLE"
 - Do not invent asset availability. Put missing visuals into `asset_requirements`.
 - If VDS conflicts with user request, preserve the user's intent and adapt VDS style conservatively.
 - For full video production, read and update paths through `video-job-manager` instead of shared `source/`.
+- Every `[[text_overlays]].text` must satisfy `len(text) <= max_chars[style_ref]` (see table above).
