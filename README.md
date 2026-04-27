@@ -4,7 +4,7 @@
   <img src="logo-dark.svg" alt="video automator skills" width="180" height="23">
 </p>
 
-> Kho kỹ năng (skills) để xây pipeline sản xuất video ngắn bằng agent: lập kế hoạch, xử lý audio, ánh xạ asset, dựng timeline và render.
+> Kho kỹ năng (skills) để xây pipeline sản xuất video ngắn bằng agent: lập kế hoạch, xử lý audio, tìm kiếm asset, dựng timeline và render video tự động.
 
 Tài liệu đầy đủ: **https://vas.bachdyon.com/**
 
