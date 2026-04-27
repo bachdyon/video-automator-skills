@@ -28,6 +28,12 @@ Official third-party skill:
 
 - `$remotion-best-practices` — skill chính thức từ `remotion-dev/skills`, bắt buộc dùng cho mọi task Remotion.
 
+---
+
+Nếu repo hữu ích cho bạn, hãy cân nhắc [donate](https://vas.bachdyon.com/donate) để dự án có kinh phí tiếp tục dùng AI tools cho phát triển và test tính năng mới.
+
+---
+
 ## Tài liệu
 
 - [Bắt đầu nhanh](https://vas.bachdyon.com/quickstart)
