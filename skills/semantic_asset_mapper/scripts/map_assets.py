@@ -237,10 +237,44 @@ def select_cutaway_sequence(
     return selected
 
 
+def _maybe_export_via_vector_index(args: argparse.Namespace) -> Path:
+    """If ``--use-vector-index`` is set, generate ``asset_semantics.toml`` on the
+    fly by vector-searching the asset-index DB for each scene intent.
+
+    Returns the path to the TOML the rest of ``build`` should consume. When
+    vector mode is off, returns ``args.asset_semantics`` unchanged.
+    """
+    if not getattr(args, "use_vector_index", False):
+        return args.asset_semantics
+    workspace_root = Path(__file__).resolve().parents[3]
+    sys.path.insert(0, str(workspace_root))
+    from tools.asset_index.exporter import export_for_creative_plan  # type: ignore
+
+    target = args.asset_semantics
+    target.parent.mkdir(parents=True, exist_ok=True)
+    summary = export_for_creative_plan(
+        args.creative_plan,
+        output=target,
+        db_path=getattr(args, "asset_index_db", None) or workspace_root / ".asset_index" / "index.db",
+        env_file=getattr(args, "env_file", None) or workspace_root / ".env",
+        top_per_intent=getattr(args, "top_per_intent", 5),
+        job_id=getattr(args, "vector_job_id", None),
+        source_root=getattr(args, "vector_source_root", None),
+        media_filter=getattr(args, "vector_media", None),
+    )
+    print(
+        f"[mapper] vector-index export wrote {summary['assets']} assets, "
+        f"{summary['scenes']} scenes -> {summary['output']}",
+        file=sys.stderr,
+    )
+    return target
+
+
 def build(args: argparse.Namespace) -> None:
     creative = read_toml(args.creative_plan)
     transcript = read_toml(args.transcript) if args.transcript.exists() else {}
-    assets = read_toml(args.asset_semantics)
+    asset_semantics_path = _maybe_export_via_vector_index(args)
+    assets = read_toml(asset_semantics_path)
     scenes = scene_intents(creative, transcript)
     asset_scenes = asset_scene_rows(assets)
     if not scenes:
@@ -448,6 +482,42 @@ def main() -> None:
         "--legacy-cutaway",
         action="store_true",
         help="Re-enable the deprecated heuristic cutaway algorithm. Production should use shot-coverage-planner instead.",
+    )
+    build_parser.add_argument(
+        "--use-vector-index",
+        action="store_true",
+        help="Generate asset_semantics.toml on the fly by vector-searching the asset-index SQLite DB per scene intent. Skips reading the existing --asset-semantics file and overwrites it with the DB-derived subset.",
+    )
+    build_parser.add_argument(
+        "--top-per-intent",
+        type=int,
+        default=5,
+        help="With --use-vector-index: number of top DB matches per scene intent.",
+    )
+    build_parser.add_argument(
+        "--vector-source-root",
+        help="With --use-vector-index: restrict to 'raw_assets', 'jobs', or an exact source_root prefix.",
+    )
+    build_parser.add_argument(
+        "--vector-job-id",
+        help="With --use-vector-index: restrict to a single job_id.",
+    )
+    build_parser.add_argument(
+        "--vector-media",
+        choices=("image", "video"),
+        help="With --use-vector-index: restrict to image or video assets only.",
+    )
+    build_parser.add_argument(
+        "--asset-index-db",
+        type=Path,
+        default=None,
+        help="With --use-vector-index: override DB path (default .asset_index/index.db).",
+    )
+    build_parser.add_argument(
+        "--env-file",
+        type=Path,
+        default=None,
+        help="With --use-vector-index: override .env path used for embedding API key.",
     )
     build_parser.set_defaults(func=build)
     validate_parser = sub.add_parser("validate")
