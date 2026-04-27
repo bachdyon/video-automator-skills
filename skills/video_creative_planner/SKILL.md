@@ -1,55 +1,83 @@
 ---
 name: video-creative-planner
-description: Turn a new video request plus an optional Video Design Specification into a production-ready creative plan, script, scene intents, overlay text, and asset requirements for a short-form video pipeline.
+description: Biến yêu cầu video mới (kèm Video Design Specification tùy chọn) thành creative plan, kịch bản, scene intents, overlay text và asset requirements ở mức sẵn sàng đưa vào pipeline video short-form.
 ---
 
 # Video Creative Planner
 
-## Goal
+## Mục tiêu
 
-Convert a user's new video idea into a structured creative plan that downstream voice, asset mapping, and rendering skills can execute.
+Chuyển ý tưởng video mới của user thành một creative plan có cấu trúc, để các skill phía sau (voice, asset mapping, render) có thể thực thi được.
 
-Use this skill when the user provides a topic, brief, product idea, campaign request, or rough script and wants a new TikTok/Reels/Shorts-style video built from it.
+Dùng skill này khi user đưa ra chủ đề, brief, ý tưởng sản phẩm, yêu cầu chiến dịch hoặc kịch bản nháp và muốn dựng một video TikTok/Reels/Shorts từ đó.
 
-## Script Environment Rule
+## Quy tắc đầu ra (BẮT BUỘC)
 
-Before running any script as part of this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+- Mọi nội dung do AI/LLM sinh ra (script, scene_intents, mô tả, mood, overlay text, lý do, summary) **bắt buộc viết bằng tiếng Việt CÓ DẤU**.
+- Cấm asciify (vd KHÔNG được viết "cong truong" thay cho "công trường" trong script, visual_intent, hay mô tả).
+- Tags và identifier kebab-case (mood, style_ref, narrative_role) vẫn lowercase ASCII (vd: `vat-va`, `chan-thuc`).
+- Tên trường, tên CLI flag, file path, tên model, JSON/TOML key giữ nguyên tiếng Anh — không được dịch.
+- Nếu user yêu cầu ngôn ngữ khác (vd `language = "en"` trong metadata), tuân theo yêu cầu đó.
 
-## Inputs
+## Quy tắc môi trường script
 
-- User request or creative brief.
-- Optional VDS from `video-design-spec-builder`.
-- Optional target platform, duration, language, brand constraints, CTA, and available asset notes.
+Trước khi chạy bất kỳ script nào trong skill này, đọc file `.env` ở repo-root trước. File này nằm cạnh `jobs/`, `skills/`, và `env.example`. Chỉ kiểm tra xem các key cần thiết có tồn tại hay không; tuyệt đối không in giá trị secret ra log, terminal, TOML artifact, hay phản hồi. Chỉ dùng `--env-file` không phải repo-root khi user yêu cầu rõ ràng.
 
-## Output
+## Đầu vào
 
-Write or return TOML. Default path:
+- Yêu cầu hoặc brief sáng tạo của user.
+- VDS tùy chọn từ `video-design-spec-builder`.
+- Tùy chọn: nền tảng đích, thời lượng, ngôn ngữ, ràng buộc thương hiệu, CTA, ghi chú asset có sẵn.
+- Tùy chọn: asset-index DB (`.asset_index/index.db`) — nên truy vấn trước khi soạn scene_intents để biết thực tế đang có footage gì.
+
+## Khám phá footage có sẵn trước khi viết scene_intents
+
+Khi watcher asset-index đang chạy, project đã biết sẵn raw asset nào tồn tại và chứa gì. Trước khi tự bịa scene_intents, nên đưa các phương án thật ra trước:
+
+```bash
+.venv/bin/python -m tools.asset_index.search "<mô tả ngắn cảnh muốn tìm bằng tiếng Việt>" --top 5
+```
+
+Hoặc gọi trong code agent:
+
+```python
+from tools.asset_index.search import search_assets
+hits = search_assets("cảnh người làm việc tay chân ở quê", k=5, media_type="video")
+for h in hits:
+    print(h["score"], h["file_path"], h["summary"])
+```
+
+Dùng các summary trả về để bám sát thực tế khi điền `visual_intent`, `preferred_shot_types`, `asset_requirements`. Nếu một visual cần thiết không có match nào ổn (score < ~0.3 toàn bộ), giữ nó dưới dạng entry `asset_requirements` và nói rõ với user là asset đang thiếu — không bịa.
+
+## Đầu ra
+
+Ghi hoặc trả về TOML. Đường dẫn mặc định:
 
 ```text
 source/creative_plan.toml
 ```
 
-When a video job exists, write to:
+Khi đã có video job tồn tại, ghi vào:
 
 ```text
 jobs/<job_id>/source/creative_plan.toml
 ```
 
-## Workflow
+## Quy trình
 
-1. Identify target audience, platform, duration, language, and emotional arc.
-2. If a VDS is provided, preserve its style DNA, timing logic, text system, motion system, and scene blueprint.
-3. Build a voiceover script that can be spoken naturally.
-4. Split the script into scene intents, not final asset choices.
-5. Define overlay text, subtitle behavior, and CTA.
-6. Define asset requirements so `asset-semantic-extractor` and `semantic-asset-mapper` know what to look for.
-7. Keep identifiers, personal data, and private details abstract unless the user explicitly owns and requests them.
+1. Xác định đối tượng đích, nền tảng, thời lượng, ngôn ngữ và emotional arc.
+2. Nếu có VDS, bảo toàn DNA phong cách, logic timing, text system, motion system và scene blueprint.
+3. Viết kịch bản voiceover sao cho đọc tự nhiên được.
+4. Chia kịch bản thành scene_intents — không phải lựa chọn asset cuối cùng.
+5. Định nghĩa overlay text, hành vi subtitle và CTA.
+6. Định nghĩa asset_requirements để `asset-semantic-extractor` và `semantic-asset-mapper` biết tìm gì.
+7. Giữ identifier, dữ liệu cá nhân, chi tiết riêng tư ở mức trừu tượng trừ khi user xác nhận sở hữu và yêu cầu rõ.
 
-## TOML Contract
+## Hợp đồng TOML
 
 ```toml
 [metadata]
-title = "Short descriptive title"
+title = "Tiêu đề mô tả ngắn"
 language = "vi"
 platform = "tiktok"
 target_duration_seconds = 45
@@ -65,17 +93,17 @@ cta = "..."
 
 [voiceover]
 script = """
-Full spoken script.
+Toàn bộ kịch bản đọc.
 """
-delivery = "warm, clear, lightly cinematic"
+delivery = "ấm, rõ, hơi cinematic"
 
 [[scene_intents]]
 id = "SC_01"
 start_hint = 0.0
 end_hint = 6.0
 narrative_role = "hook"
-spoken_text = "Sentence or paragraph expected in this scene."
-visual_intent = "What the viewer should see, without choosing a specific file."
+spoken_text = "Câu hoặc đoạn văn dự kiến nói trong scene này."
+visual_intent = "Khán giả nên thấy gì, không chọn file cụ thể."
 mood = "..."
 preferred_shot_types = ["close-up", "slow push-in"]
 asset_requirements = ["..."]
@@ -83,41 +111,41 @@ asset_requirements = ["..."]
 [[text_overlays]]
 id = "TXT_01"
 scene_id = "SC_01"
-text = "Short on-screen text"
+text = "Text ngắn hiển thị trên màn hình"
 role = "hook"
 timing = "sync_with_scene_start"
 style_ref = "MAIN_TITLE"
 ```
 
-## Text Overlay Length Limits (1080×1920 vertical)
+## Giới hạn độ dài Text Overlay (1080×1920 dọc)
 
-On-screen text must fit within a safe box of ~880px on a 1080-wide canvas (≈82%). Each `style_ref` has a hard `max_chars` ceiling and a recommended sweet spot that keeps text on 1–2 lines without auto-shrink. **Vietnamese and other diacritic languages render ~10% wider than plain Latin; numbers count as 0.6 char each.**
+Text trên màn hình phải vừa với khung an toàn ~880px trên canvas rộng 1080px (~82%). Mỗi `style_ref` có ngưỡng `max_chars` cứng và mức khuyến nghị giúp text vừa 1–2 dòng mà không phải auto-shrink. **Tiếng Việt và các ngôn ngữ có dấu render rộng hơn ~10% so với Latin thuần; số đếm là 0.6 char mỗi ký tự.**
 
-| `style_ref`      | `max_chars` (incl. spaces) | recommended | typical role           |
-| ---------------- | -------------------------: | ----------: | ---------------------- |
-| `MAIN_TITLE`     |                         22 |       12–16 | hook, reveal callout   |
-| `PUNCH_TAG`      |                         18 |       10–14 | punchline, uppercase   |
-| `STAT_TAG`       |                         14 |        6–10 | numbers, stats, prices |
-| `SUBTITLE_BOLD`  |                         32 |       18–26 | secondary callout      |
-| `QUOTE_TAG`      |                         36 |       22–30 | quoted phrases, italic |
+| `style_ref`      | `max_chars` (kể cả khoảng trắng) | khuyến nghị | vai trò điển hình         |
+| ---------------- | -------------------------------: | ----------: | ------------------------- |
+| `MAIN_TITLE`     |                               22 |       12–16 | hook, reveal callout      |
+| `PUNCH_TAG`      |                               18 |       10–14 | punchline, viết hoa       |
+| `STAT_TAG`       |                               14 |        6–10 | số, thống kê, giá tiền    |
+| `SUBTITLE_BOLD`  |                               32 |       18–26 | callout phụ               |
+| `QUOTE_TAG`      |                               36 |       22–30 | câu trích dẫn, in nghiêng |
 
-If a sentence exceeds `max_chars` for the chosen style, pick one of (in order):
+Nếu một câu vượt `max_chars` của style đã chọn, áp dụng theo thứ tự:
 
-1. **Shorten / abbreviate** the wording while keeping the punch (e.g. `"Săn lấp mặt bằng = Xúc đất"` → `"Săn lấp = Xúc đất"`).
-2. **Split into two back-to-back overlays** with `start`/`end` chained (≥0.4s gap, same `style_ref` or paired styles).
-3. **Downgrade `style_ref`** to a smaller preset (`MAIN_TITLE` → `SUBTITLE_BOLD`, `PUNCH_TAG` → `QUOTE_TAG`) only if the role allows it.
+1. **Rút gọn / viết tắt** trong khi giữ điểm punch (vd `"Săn lấp mặt bằng = Xúc đất"` → `"Săn lấp = Xúc đất"`).
+2. **Tách thành hai overlay nối tiếp** với `start`/`end` ghép nhau (≥0.4s gap, cùng `style_ref` hoặc style được ghép cặp).
+3. **Hạ `style_ref`** xuống preset nhỏ hơn (`MAIN_TITLE` → `SUBTITLE_BOLD`, `PUNCH_TAG` → `QUOTE_TAG`) chỉ khi vai trò cho phép.
 
-The renderer applies a defensive auto-shrink + word-break, but the planner is responsible for the *intended* fit. Overlays whose text exceeds `max_chars` will trigger a `OVERLAY_TEXT_TOO_LONG` warning from `video-render-plan-builder` and look small/squeezed at render time.
+Renderer có auto-shrink + word-break phòng thủ, nhưng planner chịu trách nhiệm cho mục tiêu fit. Overlay vượt `max_chars` sẽ phát warning `OVERLAY_TEXT_TOO_LONG` từ `video-render-plan-builder` và bị nhỏ/bóp khi render.
 
-## Subtitle Density Limits
+## Giới hạn mật độ Subtitle
 
-Subtitle pages (TikTok-style word highlight) target ≤ 26 characters per page; the renderer auto-splits longer pages, but the planner should keep each `voiceover` sentence speakable without 8+ short words back-to-back. Avoid extremely long compound numbers in narration (`"hai mươi ba triệu năm trăm nghìn"`); use overlay text instead and keep narration short.
+Trang subtitle (kiểu TikTok highlight từng từ) target ≤ 26 ký tự/trang; renderer tự tách trang dài, nhưng planner nên giữ mỗi câu `voiceover` đọc trôi chảy, không có 8+ từ ngắn liên tiếp. Tránh số ghép quá dài trong narration (`"hai mươi ba triệu năm trăm nghìn"`); dùng overlay text thay thế và giữ narration ngắn.
 
-## Quality Rules
+## Quy tắc chất lượng
 
-- The script must be speakable; avoid long nested clauses.
-- Scene intents should be semantic and reusable, not bound to file paths.
-- Do not invent asset availability. Put missing visuals into `asset_requirements`.
-- If VDS conflicts with user request, preserve the user's intent and adapt VDS style conservatively.
-- For full video production, read and update paths through `video-job-manager` instead of shared `source/`.
-- Every `[[text_overlays]].text` must satisfy `len(text) <= max_chars[style_ref]` (see table above).
+- Kịch bản phải đọc nói được; tránh mệnh đề lồng dài.
+- Scene intent nên mang tính ngữ nghĩa và tái sử dụng, không gắn vào file path.
+- Không bịa asset có sẵn. Thiếu visual nào thì cho vào `asset_requirements`.
+- Nếu VDS xung đột với yêu cầu user, ưu tiên ý user và adapt VDS một cách bảo thủ.
+- Với production đầy đủ, đọc và cập nhật path qua `video-job-manager` thay vì dùng `source/` chung.
+- Mỗi `[[text_overlays]].text` phải thỏa `len(text) <= max_chars[style_ref]` (xem bảng trên).

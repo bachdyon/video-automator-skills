@@ -1,73 +1,82 @@
 ---
 name: semantic-asset-mapper
-description: Match transcript or scene intents to semantically indexed image/video assets and produce a TOML timeline mapping with start, end, file_path, selected source segment, and reason.
+description: Khớp transcript hoặc scene intents với asset ảnh/video đã được index ngữ nghĩa, sinh TOML timeline mapping với start, end, file_path, đoạn source được chọn và lý do.
 ---
 
 # Semantic Asset Mapper
 
-## Script Environment Rule
+## Quy tắc đầu ra (BẮT BUỘC)
 
-Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+- Mọi nội dung do AI/LLM sinh ra (đặc biệt là trường `reason`, ghi chú, cảnh báo bằng văn xuôi) **bắt buộc viết bằng tiếng Việt CÓ DẤU**.
+- Cấm asciify (vd KHÔNG được viết "lao dong" thay cho "lao động" trong reason).
+- Tags, fit_labels, warning code, narrative_role giữ ASCII lowercase (vd: `semantic`, `mood`, `SOURCE_SHORTER_THAN_TIMELINE`).
+- Tên trường, CLI flag, file path, JSON/TOML key giữ nguyên tiếng Anh — không dịch.
 
-## Goal
+## Quy tắc môi trường script
 
-Map the spoken content and scene intent of a new video to the best matching assets. This skill decides which asset appears when and why.
+Trước khi chạy bất kỳ script nào của skill này, đọc file `.env` ở repo-root trước. File này nằm cạnh `jobs/`, `skills/`, và `env.example`. Chỉ kiểm tra các key cần thiết có tồn tại không; tuyệt đối không in giá trị secret. Chỉ dùng `--env-file` không phải repo-root khi user yêu cầu rõ ràng.
 
-Use this skill after transcript/scene intents and asset semantic index are available.
+## Mục tiêu
 
-## Inputs
+Khớp nội dung lời thoại và scene intent của video mới với asset phù hợp nhất. Skill này quyết định asset nào xuất hiện vào lúc nào và vì sao.
 
-- `source/creative_plan.toml` from `video-creative-planner`.
-- `source/transcript_word_level.toml` from `openai-whisper-word-timestamps`.
-- `source/asset_semantics.toml` from `asset-semantic-extractor`.
-- Optional VDS for pacing and scene role constraints.
+Dùng skill này sau khi đã có transcript/scene intents và asset semantic index.
 
-## Output
+## Đầu vào
 
-Write or return TOML. Default path:
+- `source/creative_plan.toml` từ `video-creative-planner`.
+- `source/transcript_word_level.toml` từ `openai-whisper-word-timestamps`.
+- `source/asset_semantics.toml` từ `asset-semantic-extractor` **HOẶC** asset-index SQLite vector DB tại `.asset_index/index.db` (ưu tiên khi watcher đang chạy).
+- VDS tùy chọn cho ràng buộc về pacing và vai trò scene.
+
+Khi watcher asset-index đang hoạt động, chạy `asset-semantic-extractor` trước để nó sinh `source/asset_semantics.toml` từ DB mà không cần gọi lại Gemini, hoặc dùng `--use-vector-index` (xem bên dưới) để skill này tự kéo subset cần thiết từ DB.
+
+## Đầu ra
+
+Ghi hoặc trả về TOML. Đường dẫn mặc định:
 
 ```text
 source/semantic_mapping.toml
 ```
 
-When a video job exists, write to:
+Khi đã có video job, ghi vào:
 
 ```text
 jobs/<job_id>/source/semantic_mapping.toml
 ```
 
-## Workflow
+## Quy trình
 
-1. Read scene intents, transcript sentences, and asset semantics.
-2. Align scene boundaries to transcript timing when possible.
-3. Choose assets based on semantic fit, mood fit, shot type, visual continuity, and quality constraints.
-4. Prefer matching source video sub-scenes over entire clips.
-5. Use still images only when they fit the pacing or no stronger video exists.
-6. Produce a **baseline** 1-1 mapping: one best-fit `asset_scene` per scene_intent, with `start, end, source_start, source_end, fit_score, fit_labels`. Do NOT subdivide for coverage shortage; that is the job of `shot-coverage-planner`.
-7. Mark every row whose timeline duration exceeds source duration with `warnings += ["SOURCE_SHORTER_THAN_TIMELINE"]` so the next stage knows where to act.
-8. Do not specify final crop, transitions, text animation, or render parameters; leave that to `video-render-plan-builder`.
+1. Đọc scene intents, transcript sentences, và asset semantics.
+2. Căn biên scene vào timing transcript khi có thể.
+3. Chọn asset dựa trên độ khớp ngữ nghĩa, mood, shot type, tính liên tục thị giác và ràng buộc chất lượng.
+4. Ưu tiên match sub-scene của video nguồn hơn là dùng cả clip.
+5. Chỉ dùng ảnh tĩnh khi phù hợp pacing hoặc không có video nào mạnh hơn.
+6. Sinh **baseline** mapping 1-1: mỗi `scene_intent` được match với 1 `asset_scene` tốt nhất, kèm `start, end, source_start, source_end, fit_score, fit_labels`. KHÔNG chia nhỏ để bù coverage; đó là việc của `shot-coverage-planner`.
+7. Đánh dấu mọi row có timeline duration vượt source duration với `warnings += ["SOURCE_SHORTER_THAN_TIMELINE"]` để stage tiếp theo biết chỗ nào cần xử lý.
+8. Không quy định crop cuối, transitions, animation text, hay tham số render; để cho `video-render-plan-builder`.
 
-## Coverage shortage handoff
+## Bàn giao coverage shortage
 
-When `timeline_duration - best_source_duration > 0.5s`, do NOT loop, freeze, or auto-stitch cutaways here. Emit the row as-is with a `SOURCE_SHORTER_THAN_TIMELINE` warning and let `shot-coverage-planner` make the editorial decision (cutaway / slowdown / hold + Ken Burns) using the agent's creative judgement.
+Khi `timeline_duration - best_source_duration > 0.5s`, KHÔNG loop, freeze, hay auto-stitch cutaways tại đây. Emit row nguyên trạng với warning `SOURCE_SHORTER_THAN_TIMELINE` và để `shot-coverage-planner` đưa ra quyết định biên tập (cutaway / slowdown / hold + Ken Burns) bằng phán đoán sáng tạo của agent.
 
-The bundled script's `--no-cutaway` flag is the **default** in the new pipeline. The legacy heuristic cutaway algorithm is kept for backwards compatibility and can be re-enabled with `--legacy-cutaway`, but should not be used in production.
+Cờ `--no-cutaway` của script là **mặc định** trong pipeline mới. Thuật toán cutaway heuristic legacy vẫn được giữ cho backward compatibility và có thể bật lại bằng `--legacy-cutaway`, nhưng không nên dùng trong production.
 
-## Required Minimal Contract
+## Hợp đồng tối thiểu (BẮT BUỘC)
 
-The core list must include exactly these fields for every mapping:
+Danh sách lõi phải có đủ các trường này cho mỗi mapping:
 
 ```toml
 [[mappings]]
 start = 0.0
 end = 5.2
 file_path = "source/input/clip01.mp4"
-reason = "Matches the opening line about a quiet morning routine."
+reason = "Khớp với câu mở đầu về buổi sáng yên tĩnh."
 ```
 
-## Extended Contract
+## Hợp đồng mở rộng
 
-Use the extended fields whenever source scene details are available:
+Dùng các trường mở rộng khi đã có chi tiết source scene:
 
 ```toml
 [[mappings]]
@@ -82,21 +91,21 @@ source_start = 0.0
 source_end = 5.8
 fit_score = 0.86
 fit_labels = ["semantic", "mood", "pacing"]
-reason = "Matches the opening line about a quiet morning routine."
+reason = "Khớp với câu mở đầu về buổi sáng yên tĩnh."
 fallback = false
 warnings = []
 ```
 
-## Quality Rules
+## Quy tắc chất lượng
 
-- Never map an asset segment marked unusable unless no alternative exists; then set `fallback = true`.
-- Avoid repeating the same visual too often unless the VDS calls for repetition.
-- Respect privacy notes from asset semantics.
-- Keep timeline continuous unless intentional silence/black screen is specified.
+- Không bao giờ map một đoạn asset bị đánh dấu unusable trừ khi không còn lựa chọn; khi đó set `fallback = true`.
+- Tránh lặp cùng visual quá nhiều trừ khi VDS yêu cầu lặp lại.
+- Tôn trọng privacy notes trong asset semantics.
+- Giữ timeline liên tục trừ khi có chỉ định im lặng/black screen có chủ đích.
 
-## Utility Script
+## Script hỗ trợ
 
-Use the bundled script for baseline mapping and validation:
+Dùng script đi kèm cho baseline mapping và validate:
 
 ```bash
 python skills/semantic_asset_mapper/scripts/map_assets.py build \
@@ -109,7 +118,7 @@ python skills/semantic_asset_mapper/scripts/map_assets.py validate \
   --mapping source/semantic_mapping.toml
 ```
 
-For a job-scoped run, pass job paths explicitly:
+Cho job-scoped run, truyền path job tường minh:
 
 ```bash
 python skills/semantic_asset_mapper/scripts/map_assets.py build \
@@ -119,4 +128,29 @@ python skills/semantic_asset_mapper/scripts/map_assets.py build \
   --output jobs/<job_id>/source/semantic_mapping.toml
 ```
 
-The script performs deterministic token/tag scoring, creates continuous mapping rows, and validates gaps, overlaps, invalid ranges, and missing files. Use LLM judgment to improve semantic choices and reasons after the baseline exists.
+Script chạy scoring token/tag deterministic, sinh các row mapping liên tục, và validate khoảng trống, overlap, range không hợp lệ, file thiếu. Dùng phán đoán LLM để cải thiện lựa chọn semantic và lý do sau khi đã có baseline.
+
+### Chế độ vector-index (khuyến nghị khi raw_assets/ lớn)
+
+Thay vì chuẩn bị `asset_semantics.toml` từ trước, để mapper vector-search asset-index DB cho mỗi scene intent rồi viết TOML rút gọn ngay tại chỗ:
+
+```bash
+python skills/semantic_asset_mapper/scripts/map_assets.py build \
+  --creative-plan jobs/<job_id>/source/creative_plan.toml \
+  --transcript jobs/<job_id>/source/transcript_word_level.toml \
+  --asset-semantics jobs/<job_id>/source/asset_semantics.toml \
+  --output jobs/<job_id>/source/semantic_mapping.toml \
+  --use-vector-index \
+  --top-per-intent 5 \
+  --vector-source-root raw_assets   # hoặc 'jobs', hoặc 'jobs/<job_id>/input/raw_assets'
+```
+
+Lệnh này delegate sang `tools.asset_index.exporter.export_for_creative_plan`, hàm này embed mỗi scene_intent (narrative_role + visual_intent + spoken_text + mood + asset_requirements), chạy KNN trên `.asset_index/index.db`, dedupe, và ghi subset asset khớp vào `--asset-semantics` (ghi đè nếu đã tồn tại). Mapper sau đó đọc file đó như bình thường.
+
+Các flag hữu ích:
+
+- `--vector-media image|video` giới hạn theo loại media.
+- `--vector-job-id <id>` giới hạn ở pool của 1 job.
+- `--asset-index-db /path/to/index.db` trỏ tới DB ở vị trí khác.
+
+Khi DB chưa được populate cho asset liên quan, ưu tiên chạy `asset-semantic-extractor` trước (nó auto-index file thiếu); chế độ vector của mapper **không** auto-index, chỉ đọc cái đã có.

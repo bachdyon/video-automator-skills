@@ -1,25 +1,31 @@
 ---
 name: video-job-manager
-description: Create and manage isolated video production jobs, including request metadata, input assets, stage artifacts, status, stale tracking, and canonical paths for the video pipeline.
+description: Tạo và quản lý các video job sản xuất biệt lập, gồm metadata yêu cầu, asset đầu vào, artifact theo stage, status, theo dõi stale, và path chuẩn cho pipeline video.
 ---
 
 # Video Job Manager
 
-## Goal
+## Quy tắc đầu ra (BẮT BUỘC)
 
-Manage everything that belongs to one video-generation request as a reproducible job.
+- Mọi nội dung do AI/LLM sinh ra (`brief`, `title`, lý do stale, ghi chú trong todo) **bắt buộc viết bằng tiếng Việt CÓ DẤU**.
+- Cấm asciify (vd KHÔNG được viết "stale do voice thay doi").
+- `job.id`, tên stage (`creative_plan`, `render`...), enum status (`pending`, `running`, `done`, `failed`, `stale`), key TOML, CLI flag, file path giữ nguyên tiếng Anh — không dịch.
 
-This skill does not create video content directly. It creates and maintains the job workspace that all other video skills read from and write to.
+## Mục tiêu
 
-## Script Environment Rule
+Quản lý mọi thứ thuộc về 1 yêu cầu sinh video như 1 job có thể tái lập.
 
-Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+Skill này không tự tạo nội dung video. Nó tạo và bảo trì job workspace để các skill video khác đọc và ghi vào.
 
-## When To Use
+## Quy tắc môi trường script
 
-Use this skill when the user starts a new video request, adds reference/input assets, asks for job status, reruns part of the pipeline, or needs to locate artifacts for a specific video request.
+Trước khi chạy bất kỳ script nào của skill này, đọc file `.env` ở repo-root trước. File này nằm cạnh `jobs/`, `skills/`, và `env.example`. Chỉ kiểm tra các key cần thiết có tồn tại không; tuyệt đối không in giá trị secret. Chỉ dùng `--env-file` không phải repo-root khi user yêu cầu rõ ràng.
 
-## Default Layout
+## Khi nào dùng
+
+Dùng skill này khi user bắt đầu yêu cầu video mới, thêm reference/input asset, hỏi status job, rerun một phần pipeline, hoặc cần tìm artifact của một yêu cầu video cụ thể.
+
+## Layout mặc định
 
 ```text
 .env
@@ -60,18 +66,18 @@ jobs/
       todo.toml
 ```
 
-## Responsibilities
+## Trách nhiệm
 
-1. Create a unique `jobs/<job_id>` directory.
-2. Store the original request in `job.toml`.
-3. Register reference videos, raw assets, audio, and brand files.
-4. Track canonical artifact paths for every stage.
-5. Mark pipeline stages as `pending`, `running`, `done`, `failed`, or `stale`.
-6. Mark downstream stages stale when inputs change.
-7. Provide paths that other skills should use.
-8. Maintain `logs/todo.toml` as the always-current todo list for the job.
+1. Tạo directory duy nhất `jobs/<job_id>`.
+2. Lưu yêu cầu gốc trong `job.toml`.
+3. Đăng ký reference video, raw asset, audio, file brand.
+4. Track path artifact chuẩn cho mọi stage.
+5. Đánh dấu stage pipeline là `pending`, `running`, `done`, `failed`, hoặc `stale`.
+6. Đánh dấu stage downstream stale khi input thay đổi.
+7. Cung cấp path để các skill khác sử dụng.
+8. Bảo trì `logs/todo.toml` như danh sách todo luôn cập nhật cho job.
 
-## Stage Order
+## Thứ tự stage
 
 ```text
 request
@@ -85,14 +91,14 @@ render_plan
 render
 ```
 
-## Utility Script
+## Script tiện ích
 
-Use the bundled script for deterministic job state management:
+Dùng script đi kèm để quản lý state job deterministic:
 
 ```bash
 python skills/video_job_manager/scripts/manage_job.py create \
   --title "Morning routine ad" \
-  --brief "Create a reflective 45s TikTok..." \
+  --brief "Tạo TikTok 45s phong cách reflective..." \
   --platform tiktok \
   --language vi \
   --target-duration 45
@@ -112,7 +118,7 @@ python skills/video_job_manager/scripts/manage_job.py mark-stage \
 python skills/video_job_manager/scripts/manage_job.py stale-from \
   --job jobs/2026-04-25_001_morning-routine-ad \
   --stage voice \
-  --reason "voice audio changed"
+  --reason "audio voice đã thay đổi"
 
 python skills/video_job_manager/scripts/manage_job.py status \
   --job jobs/2026-04-25_001_morning-routine-ad
@@ -121,9 +127,9 @@ python skills/video_job_manager/scripts/manage_job.py todo \
   --job jobs/2026-04-25_001_morning-routine-ad
 ```
 
-## TOML Contract
+## Hợp đồng TOML
 
-`job.toml` must include:
+`job.toml` phải có:
 
 ```toml
 [job]
@@ -161,20 +167,20 @@ updated_at = "..."
 reason = ""
 ```
 
-`logs/todo.toml` must be kept in sync with stage state:
+`logs/todo.toml` phải đồng bộ với state stage:
 
 ```toml
 [[todos]]
 id = "TODO_003"
 stage = "creative_plan"
-title = "Create script, scene intents, and overlay plan"
+title = "Tạo script, scene intents và overlay plan"
 status = "done"
 output = "source/creative_plan.toml"
 updated_at = "..."
 reason = ""
 ```
 
-Todo status mapping:
+Mapping todo status:
 
 ```text
 pending -> todo
@@ -184,11 +190,11 @@ failed -> blocked
 stale -> todo
 ```
 
-## Quality Rules
+## Quy tắc chất lượng
 
-- Never use shared `source/` for a real video job when a job directory exists.
-- Do not overwrite another job's artifacts.
-- Register input changes before rerunning pipeline stages.
-- When a stage's input changes, mark downstream stages stale instead of pretending they are valid.
-- Keep all paths in `job.toml` relative to the job directory when possible.
-- Every state-changing command must refresh `logs/todo.toml`.
+- Không bao giờ dùng `source/` chung cho 1 video job thật khi đã có job directory.
+- Không ghi đè artifact của job khác.
+- Đăng ký input thay đổi trước khi rerun stage pipeline.
+- Khi input của 1 stage thay đổi, đánh dấu các stage downstream stale thay vì giả vờ chúng vẫn hợp lệ.
+- Giữ mọi path trong `job.toml` tương đối so với job directory khi có thể.
+- Mọi lệnh thay đổi state phải refresh `logs/todo.toml`.

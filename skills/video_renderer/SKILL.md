@@ -1,61 +1,67 @@
 ---
 name: video-renderer
-description: Render a final short-form video from a TOML render plan, voice audio, source assets, subtitles, overlays, and VDS style rules using the project renderer such as Remotion or FFmpeg.
+description: Render video short-form cuối cùng từ TOML render plan, voice audio, source asset, subtitle, overlay, và quy tắc style VDS bằng renderer của project (Remotion hoặc FFmpeg).
 ---
 
 # Video Renderer
 
-## Goal
+## Quy tắc đầu ra (BẮT BUỘC)
 
-Execute the final render from `source/render_plan.toml` and produce a video file. For job-scoped production, create or update a dedicated Remotion project under `jobs/<job_id>/remotion/` and render that job independently.
+- Mọi nội dung do AI/LLM sinh ra (warning message, render report comment) **bắt buộc viết bằng tiếng Việt CÓ DẤU**.
+- Cấm asciify (vd KHÔNG được viết "asset thieu" thay cho "asset thiếu").
+- Tên file (TS/TSX), tên component (`OverlayText`, `MediaLayer`...), tên hằng (`SAFE_BOX_WIDTH`, `MAX_CHARS_PER_PAGE`...), enum (`fade_slide`, `cover`, `cut`...), CLI flag, file path, model id, code TypeScript/JavaScript giữ nguyên tiếng Anh — không dịch.
 
-Use this skill when the user asks to render, export, preview, or produce the final video after the render plan exists.
+## Mục tiêu
 
-When this skill creates, updates, validates, previews, or renders a Remotion project, it must explicitly load and reference the official `$remotion-best-practices` skill before making Remotion-specific implementation decisions.
+Thực thi render cuối cùng từ `source/render_plan.toml` và sinh ra file video. Cho production job-scoped, tạo hoặc cập nhật Remotion project riêng dưới `jobs/<job_id>/remotion/` và render job đó độc lập.
 
-Before starting Remotion work, verify the official skill exists by running `scripts/ensure-remotion-skill.sh` from the repo root. If it is missing, install it with `npx skills add remotion-dev/skills --yes` after getting permission for network access.
+Dùng skill này khi user yêu cầu render, export, preview, hoặc sản xuất video cuối cùng sau khi đã có render plan.
 
-## Script Environment Rule
+Khi skill này tạo, cập nhật, validate, preview, hoặc render Remotion project, BẮT BUỘC load và tham chiếu skill chính thức `$remotion-best-practices` trước khi đưa ra quyết định triển khai đặc thù Remotion.
 
-Before running any renderer or bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+Trước khi bắt đầu công việc Remotion, verify skill chính thức tồn tại bằng `scripts/ensure-remotion-skill.sh` từ repo root. Nếu thiếu, cài bằng `npx skills add remotion-dev/skills --yes` sau khi xin phép user về quyền truy cập network.
 
-## Inputs
+## Quy tắc môi trường script
+
+Trước khi chạy bất kỳ renderer hoặc script nào của skill này, đọc file `.env` ở repo-root trước. File này nằm cạnh `jobs/`, `skills/`, và `env.example`. Chỉ kiểm tra các key cần thiết có tồn tại không; tuyệt đối không in giá trị secret. Chỉ dùng `--env-file` không phải repo-root khi user yêu cầu rõ ràng.
+
+## Đầu vào
 
 - `source/render_plan.toml`.
-- Voice audio from `ausynclab-voice`.
-- Source image/video assets.
-- Optional VDS for style references.
-- Project renderer implementation. For video jobs, default to a job-scoped Remotion project.
+- Audio voice từ `ausynclab-voice`.
+- Source asset ảnh/video.
+- VDS tùy chọn cho tham chiếu style.
+- Renderer của project. Cho video job, mặc định Remotion project job-scoped.
 
-## Output
+## Đầu ra
 
-Default final file:
+File cuối cùng mặc định:
 
 ```text
 output/final_video.mp4
 ```
 
-When a video job exists, write to:
+Khi đã có video job, ghi vào:
 
 ```text
 jobs/<job_id>/output/final_video.mp4
 ```
 
-Also write a render report when useful:
+Cũng ghi 1 render report khi cần:
 
 ```text
 output/render_report.toml
 ```
 
-For job-scoped runs:
+Cho job-scoped run:
 
 ```text
 jobs/<job_id>/output/render_report.toml
 ```
 
-## Job-Scoped Remotion Layout
+## Layout Remotion job-scoped
 
-Each video job owns its own Remotion project:
+Mỗi video job sở hữu Remotion project riêng:
 
 ```text
 jobs/<job_id>/
@@ -93,20 +99,20 @@ jobs/<job_id>/
     validation.log
 ```
 
-Keep repo-root `.env` outside all job folders, beside `jobs/` and `skills/`. Do not create `jobs/<job_id>/source/.env` unless the user explicitly asks for a job-specific override.
+Giữ `.env` ở repo-root, ngoài mọi job folder, cạnh `jobs/` và `skills/`. Không tạo `jobs/<job_id>/source/.env` trừ khi user yêu cầu rõ override theo job.
 
-## Workflow
+## Quy trình
 
-1. Read repo-root `.env` when credentials or renderer settings are needed.
-2. Validate all files referenced by `render_plan.toml` exist.
-3. Validate timeline duration, overlapping clips, missing audio, missing fonts, and unsupported formats.
-4. For a job-scoped run, verify/install `$remotion-best-practices`, load it, then create or update `jobs/<job_id>/remotion/` from the render plan.
-5. Copy or symlink required media into `jobs/<job_id>/remotion/public/assets/`, then generate `render-plan.generated.ts` and `assets.generated.ts`.
-6. Render preview or final export from inside the job's Remotion project.
-7. Verify the output file exists, has nonzero duration, and includes audio.
-8. Write `render_report.toml`, update `logs/render.log` when useful, and report warnings.
+1. Đọc `.env` ở repo-root khi cần credentials hoặc renderer settings.
+2. Validate mọi file được tham chiếu trong `render_plan.toml` đều tồn tại.
+3. Validate timeline duration, clip overlap, audio thiếu, font thiếu, và format không hỗ trợ.
+4. Cho job-scoped run, verify/install `$remotion-best-practices`, load nó, rồi tạo hoặc cập nhật `jobs/<job_id>/remotion/` từ render plan.
+5. Copy hoặc symlink media cần thiết vào `jobs/<job_id>/remotion/public/assets/`, rồi generate `render-plan.generated.ts` và `assets.generated.ts`.
+6. Render preview hoặc final export từ trong Remotion project của job.
+7. Verify file output tồn tại, duration khác 0, và có audio.
+8. Ghi `render_report.toml`, cập nhật `logs/render.log` khi cần, và báo warning.
 
-## Render Report Contract
+## Hợp đồng Render Report
 
 ```toml
 [render]
@@ -123,20 +129,20 @@ composition_id = "MainVideo"
 
 [[warnings]]
 code = "LOW_RES_ASSET"
-message = "Asset source/input/image01.jpg was upscaled."
+message = "Asset source/input/image01.jpg đã bị upscale."
 file_path = "source/input/image01.jpg"
 ```
 
-## Text-Safety Rules (mandatory for every Remotion project this skill scaffolds)
+## Quy tắc text-safety (bắt buộc cho mọi Remotion project skill này scaffold)
 
-A 1080×1920 vertical canvas has only ~880px of safe text width after side padding. Text overlays and subtitles **must never overflow horizontally**. Every Remotion text component generated by this skill must implement all four defenses:
+Canvas dọc 1080×1920 chỉ có ~880px chiều rộng text an toàn sau padding 2 bên. Text overlay và subtitle **tuyệt đối không được overflow ngang**. Mọi component text Remotion do skill này sinh ra phải triển khai cả 4 phòng tuyến:
 
-1. **Bounded box.** Container `maxWidth: 880` (≤82% of canvas width), with horizontal padding 28px each side.
-2. **Hard word-break.** `wordBreak: "break-word"` AND `overflowWrap: "anywhere"` on the text container; `whiteSpace: "pre-wrap"` (NOT `"pre"`) on inline highlight spans so subtitles can wrap inside a token if needed.
-3. **Auto-shrink fontSize.** Implement a `fitFontSize(baseFontSize, fontWeight, textLength, uppercase)` helper that estimates char width from font weight (`900 → 0.62em`, `800 → 0.58em`, `700 → 0.56em`, `400 → 0.5em`, `+8%` for uppercase) and shrinks fontSize by `√(safeCapacity / textLength)` when text exceeds 2-line capacity at base size. Hard floor: 40px.
-4. **Subtitle page split.** Pages produced by `@remotion/captions createTikTokStyleCaptions` may pack 6+ tokens. After receiving `result.pages`, post-process to split any page whose joined `tokens.text` length exceeds `MAX_CHARS_PER_PAGE` (default 26). Use `combineTokensWithinMilliseconds: 800–1000` instead of higher values.
+1. **Bounded box.** Container `maxWidth: 880` (≤82% width canvas), padding ngang 28px mỗi bên.
+2. **Hard word-break.** `wordBreak: "break-word"` VÀ `overflowWrap: "anywhere"` trên container text; `whiteSpace: "pre-wrap"` (KHÔNG phải `"pre"`) trên span highlight inline để subtitle wrap được trong token nếu cần.
+3. **Auto-shrink fontSize.** Cài helper `fitFontSize(baseFontSize, fontWeight, textLength, uppercase)` ước lượng char width theo font weight (`900 → 0.62em`, `800 → 0.58em`, `700 → 0.56em`, `400 → 0.5em`, `+8%` cho uppercase) và shrink fontSize theo `√(safeCapacity / textLength)` khi text vượt capacity 2 dòng ở base size. Hard floor: 40px.
+4. **Subtitle page split.** Page do `@remotion/captions createTikTokStyleCaptions` sinh có thể đóng gói 6+ token. Sau khi nhận `result.pages`, post-process để tách bất kỳ page nào có chiều dài `tokens.text` ghép vượt `MAX_CHARS_PER_PAGE` (mặc định 26). Dùng `combineTokensWithinMilliseconds: 800–1000` thay vì giá trị cao hơn.
 
-Reference snippet for `OverlayText.tsx`:
+Snippet tham chiếu cho `OverlayText.tsx`:
 
 ```tsx
 const SAFE_BOX_WIDTH = 880;
@@ -158,20 +164,20 @@ const fitFontSize = (
   return Math.max(40, Math.round(baseFontSize * Math.sqrt(twoLineCap / textLength)));
 };
 
-// Apply on the text div:
+// Áp dụng trên text div:
 //   style={{ ...preset, fontSize: fittedFontSize, maxWidth: SAFE_BOX_WIDTH,
 //            wordBreak: "break-word", overflowWrap: "anywhere",
 //            whiteSpace: "pre-wrap", hyphens: "manual" }}
 ```
 
-These rules complement the planner-side `max_chars` limits in `video-creative-planner` and the validator in `video-render-plan-builder`. Treat them as a defense-in-depth: planner constrains, builder warns, renderer guarantees.
+Các quy tắc này bổ sung cho giới hạn `max_chars` phía planner trong `video-creative-planner` và validator trong `video-render-plan-builder`. Coi đây là defense-in-depth: planner ràng buộc, builder cảnh báo, renderer bảo đảm.
 
-## Quality Rules
+## Quy tắc chất lượng
 
-- Prefer the repo's existing renderer over adding a new stack.
-- For video jobs, prefer a dedicated Remotion project per job over a shared renderer project.
-- Do not change semantic mapping during render; fix upstream files if mapping is wrong.
-- Keep render implementation deterministic and reproducible from the TOML plan.
-- If a browser/dev server is needed for visual verification, start it and verify the rendered page or preview before final handoff.
-- For full video production, render from `jobs/<job_id>/source/render_plan.toml` and mark the `render` stage in `job.toml`.
-- Every text-rendering component must follow the **Text-Safety Rules** section above. A render is not "complete" if overlays or subtitles overflow horizontally.
+- Ưu tiên renderer hiện có của repo hơn là thêm stack mới.
+- Cho video job, ưu tiên Remotion project riêng cho mỗi job hơn là dùng chung 1 renderer project.
+- Không sửa semantic mapping khi đang render; sửa file upstream nếu mapping sai.
+- Giữ render implementation deterministic và reproducible từ TOML plan.
+- Nếu cần browser/dev server cho visual verification, khởi động và verify trang/preview đã render trước khi handoff cuối.
+- Cho full video production, render từ `jobs/<job_id>/source/render_plan.toml` và đánh dấu stage `render` trong `job.toml`.
+- Mọi component render text phải tuân theo phần **Quy tắc text-safety** ở trên. Render KHÔNG được coi là "hoàn thành" nếu overlay hoặc subtitle overflow ngang.

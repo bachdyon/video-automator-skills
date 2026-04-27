@@ -1,64 +1,153 @@
 ---
 name: asset-semantic-extractor
-description: Analyze one or more image or video assets and produce a TOML semantic index describing visual content, style, scenes, timestamps, objects, mood, and reuse constraints for video assembly.
+description: Sinh TOML semantic index cho ảnh/video raw để các skill phía sau map vào kịch bản. Ưu tiên đọc từ asset-index SQLite vector DB (mỗi file gọi Gemini đúng 1 lần trong toàn bộ project), chỉ fallback về probe + vision pass tươi khi không có index.
 ---
 
 # Asset Semantic Extractor
 
-## Script Environment Rule
+## Quy tắc đầu ra (BẮT BUỘC)
 
-Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+- Mọi nội dung do AI/LLM sinh ra (`summary`, `description`, `visual_style`, `subjects`, `actions`, `environment`, `privacy_notes`, `quality_notes`...) **bắt buộc viết bằng tiếng Việt CÓ DẤU**.
+- Cấm asciify (vd KHÔNG được viết "cong truong" thay cho "công trường" trong description).
+- `tags`, `mood`, `semantic_tags`, `recommended_uses`, `avoid_uses` giữ ASCII lowercase kebab-case (vd: `vat-va`, `chan-thuc`, `b-roll-cong-truong`).
+- Tên trường (`summary`, `mood`, `start`, `end`...), CLI flag, file path, JSON/TOML key, model id (Gemini, OpenAI) giữ nguyên tiếng Anh — không dịch.
 
-## Goal
+## Quy tắc môi trường script
 
-Create a reusable semantic index for raw image and video assets. This skill does not choose where assets go in the final video; it only describes what each asset contains.
+Trước khi chạy bất kỳ script nào của skill này, đọc file `.env` ở repo-root trước. File này nằm cạnh `jobs/`, `skills/`, và `env.example`. Chỉ kiểm tra các key cần thiết có tồn tại không; tuyệt đối không in giá trị secret ra log, terminal, TOML artifact, hay phản hồi. Chỉ dùng `--env-file` không phải repo-root khi user yêu cầu rõ ràng.
 
-Use this skill when the user provides folders or files of raw images/videos and needs them prepared for semantic mapping.
+## Mục tiêu
 
-## Inputs
+Tạo semantic index dùng đi dùng lại được cho ảnh/video raw. Skill này không quyết định asset nào đi vào video cuối; nó chỉ mô tả mỗi asset chứa gì.
 
-- One or more image/video file paths.
-- Optional VDS or creative plan for vocabulary alignment.
+Dùng skill này khi user cung cấp folder hoặc file ảnh/video raw và cần chuẩn bị cho `semantic-asset-mapper`.
 
-## Output
+## Đầu vào
 
-Write or return TOML. Default path:
+- Một hoặc nhiều file/folder ảnh/video.
+- VDS hoặc creative plan tùy chọn (dùng trong chế độ vector-search để pre-filter pool asset).
+
+## Đầu ra
+
+Ghi hoặc trả về TOML. Đường dẫn mặc định:
 
 ```text
 source/asset_semantics.toml
 ```
 
-When a video job exists, write to:
+Khi đã có video job tồn tại, ghi vào:
 
 ```text
 jobs/<job_id>/source/asset_semantics.toml
 ```
 
-## Workflow
+Hợp đồng TOML (`[[assets]]` + `[[asset_scenes]]`) không thay đổi nên `semantic-asset-mapper` và `shot-coverage-planner` vẫn tiêu thụ nguyên trạng.
 
-1. Inventory all assets and preserve absolute or workspace-relative paths.
-2. For images: describe visible subjects, environment, action, mood, style, composition, colors, and possible usage.
-3. For videos: describe global style and split into scenes with start/end seconds.
-4. Label each scene with semantic tags useful for matching against script and voiceover.
-5. Note constraints: low quality, shaky footage, text baked into video, faces, logos, privacy risks, unusable segments.
-6. Do not assign assets to the final timeline; leave that to `semantic-asset-mapper`.
+## Đường ưu tiên: export từ asset-index DB
 
-## TOML Contract
+Repo có sẵn watcher (`tools/asset_index`) liên tục phân tích bất kỳ file mới nào thả vào `raw_assets/` hoặc `jobs/*/input/raw_assets/` bằng Gemini và lưu vào `.asset_index/index.db`. Luôn ưu tiên đọc DB này hơn là chạy lại Gemini.
+
+### A. Folder export (mặc định cho mọi job)
+
+```bash
+python -m tools.asset_index.exporter raw_assets/ \
+  --output source/asset_semantics.toml
+```
+
+Job-scoped:
+
+```bash
+python -m tools.asset_index.exporter jobs/<job_id>/input/raw_assets/ \
+  --output jobs/<job_id>/source/asset_semantics.toml
+```
+
+Mặc định, file nào chưa có trong DB sẽ được auto-index ngay tại chỗ qua `tools.asset_index.router` (1 lần gọi Gemini, sau đó lưu lại). Để bỏ qua auto-index, truyền `--no-auto-index` và các file thiếu sẽ được báo qua warning `NOT_INDEXED`.
+
+### B. Vector search theo creative plan (pool lớn)
+
+Khi `raw_assets/` có hàng chục/hàng trăm file nhưng chỉ một số ít liên quan đến video mới, dùng vector search để rút gọn pool:
+
+```bash
+python -m tools.asset_index.exporter \
+  --from-creative-plan jobs/<job_id>/source/creative_plan.toml \
+  --output jobs/<job_id>/source/asset_semantics.toml \
+  --top-per-intent 5 \
+  --source-root raw_assets   # hoặc 'jobs', hoặc 'jobs/<job_id>/input/raw_assets'
+```
+
+Lệnh này embed mỗi `scene_intent` (narrative_role + visual_intent + spoken_text + mood + asset_requirements), chạy KNN trên index, dedupe, và ghi subset asset khớp ra TOML. Kết hợp với `--media video` hoặc `--media image` để giới hạn theo loại media.
+
+### Quality gate (vẫn bắt buộc)
+
+Exporter copy nguyên cái có trong DB. Nếu thấy row nào Gemini sinh description trống hoặc trùng nhau, force re-analyze chỉ file đó:
+
+```bash
+.venv/bin/python -m tools.asset_index.router /absolute/path/to/file.mp4 --force
+```
+
+rồi chạy lại exporter.
+
+## Fallback: probe + Gemini Vision pass tươi
+
+Dùng khi watcher asset-index chưa cài (chưa có `.asset_index/index.db`), user opt-out tường minh, hoặc đang xử lý file ngoài workspace. Hai script dưới đây sinh cùng hợp đồng TOML từ đầu.
+
+### Env key bắt buộc
+
+`GEMINI_API_KEY` phải tồn tại và khác rỗng trong `.env`. Nếu thiếu hoặc rỗng:
+
+1. DỪNG. Không bịa scene description, không fallback sang text bulk theo asset, và không tái sử dụng cùng một description cho nhiều scene của 1 asset.
+2. Báo user: `GEMINI_API_KEY` bắt buộc cho asset semantic vision analysis.
+3. Yêu cầu user thêm vào `.env` (dòng stub `GEMINI_API_KEY=` đã có sẵn trong `env.example`).
+4. Chỉ tiếp tục sau khi user xác nhận đã set key.
+
+### Bước 1 — probe scaffold
+
+```bash
+python skills/asset_semantic_extractor/scripts/probe_assets.py source/input \
+  --output source/asset_semantics.toml \
+  --sample-frames 3 \
+  --scene-window-seconds 8
+```
+
+Job-scoped:
+
+```bash
+python skills/asset_semantic_extractor/scripts/probe_assets.py jobs/<job_id>/input/raw_assets \
+  --output jobs/<job_id>/source/asset_semantics.toml \
+  --sample-dir jobs/<job_id>/source/asset_samples \
+  --sample-frames 3 \
+  --scene-window-seconds 8
+```
+
+### Bước 2 — Gemini Vision pass
+
+```bash
+python skills/asset_semantic_extractor/scripts/analyze_with_gemini.py \
+  --input source/asset_semantics.toml \
+  --output source/asset_semantics.toml \
+  --sample-dir source/asset_samples \
+  --env-file .env \
+  --strict
+```
+
+Script abort khi `GEMINI_API_KEY` thiếu, không có sample frame cho asset, mọi model Gemini cấu hình đều fail, hoặc `--strict` được set mà quality gate phát hiện description trùng / còn `TODO:` / tag không kebab-case. Luôn rerun script (thay vì sửa TOML bằng tay) khi raw asset thay đổi.
+
+## Hợp đồng TOML (cả 2 đường đều sinh ra cái này)
 
 ```toml
 [[assets]]
 id = "AST_001"
-file_path = "source/input/clip01.mp4"
+file_path = "raw_assets/videos/clip01.mp4"
 type = "video"
 duration_seconds = 18.4
 summary = "..."
-visual_style = "handheld, natural light, warm color, shallow depth of field"
-mood = ["calm", "intimate"]
-tags = ["home", "morning", "routine"]
+visual_style = "handheld, ánh sáng tự nhiên, tông ấm, depth of field nông"
+mood = ["binh-yen", "than-mat"]
+tags = ["nha", "buoi-sang", "thuong-nhat"]
 privacy_notes = []
 quality_notes = []
 
-[[assets.scenes]]
+[[asset_scenes]]
 id = "AST_001_SC_01"
 start = 0.0
 end = 5.8
@@ -69,108 +158,24 @@ environment = "..."
 shot_type = "medium shot"
 camera_motion = "slow handheld drift"
 composition = "subject centered"
-colors = ["warm white", "muted green"]
-mood = ["quiet", "reflective"]
-semantic_tags = ["routine", "before_state"]
-recommended_uses = ["intro", "reflective beat"]
-avoid_uses = ["high energy transition"]
+colors = ["trắng ấm", "xanh lá nhạt"]
+mood = ["yen-tinh", "tu-tin"]
+semantic_tags = ["thuong-nhat", "before-state"]
+recommended_uses = ["intro", "reflective-beat"]
+avoid_uses = ["high-energy-transition"]
+sample_frames = [...]
 ```
 
-For images, set `duration_seconds = 0.0` and create one scene from `0.0` to `0.0`.
+Với ảnh, set `duration_seconds = 0.0` và tạo 1 scene từ `0.0` đến `0.0`.
 
-## Quality Rules
+## Quy tắc chất lượng
 
-- Scene timestamps are seconds as floats.
-- Descriptions must be visual and factual before interpretive.
-- Keep semantic tags stable and lowercase.
-- Flag personal identifiers instead of copying them into reusable outputs.
+- Scene timestamp là số thực (giây).
+- Description phải mô tả thị giác và sự thật trước, diễn giải sau.
+- Giữ semantic tags ổn định và lowercase.
+- Đánh dấu identifier cá nhân thay vì copy chúng vào output dùng lại.
+- Không có 2 scene trong cùng 1 asset chia sẻ `description` giống hệt.
+- Mọi `semantic_tags` đều lowercase, không khoảng trắng (dùng `-` hoặc `_`).
+- `privacy_notes` và `quality_notes` được điền khi liên quan (khuôn mặt, biển số, audio leak, đoạn rung / cháy sáng).
 
-## Utility Script
-
-Use the bundled probe script for deterministic media inventory before semantic analysis:
-
-```bash
-python skills/asset_semantic_extractor/scripts/probe_assets.py source/input \
-  --output source/asset_semantics.toml \
-  --sample-frames 3 \
-  --scene-window-seconds 8
-```
-
-For a job-scoped run:
-
-```bash
-python skills/asset_semantic_extractor/scripts/probe_assets.py jobs/<job_id>/input/raw_assets \
-  --output jobs/<job_id>/source/asset_semantics.toml \
-  --sample-dir jobs/<job_id>/source/asset_samples \
-  --sample-frames 3 \
-  --scene-window-seconds 8
-```
-
-The script scans folders, identifies images/videos, reads duration/resolution/fps with `ffprobe` when available, optionally extracts video sample frames with `ffmpeg`, and writes a TOML scaffold. After this, use visual analysis to fill `summary`, `description`, `mood`, `semantic_tags`, and scene details.
-
-## Vision Analysis (required after the probe scaffold)
-
-The probe script only writes `TODO:` placeholders. Real semantic content must come from a multimodal LLM analyzing the sample frames in `source/asset_samples/`.
-
-Default vision provider: **Google Gemini** (vision-capable model, e.g. `gemini-3.1-flash-lite-preview` or `gemini-3-flash-preview`).
-
-### Required env keys
-
-`GEMINI_API_KEY` must exist and be non-empty in `.env`. If it is missing or empty:
-
-1. STOP. Do not fabricate scene descriptions, do not fall back to per-asset bulk text, and do not re-use the same description for every scene of one asset.
-2. Notify the user: `GEMINI_API_KEY` is required for asset semantic vision analysis.
-3. Ask the user to add it to `.env` (a stub line `GEMINI_API_KEY=` already exists in `env.example`).
-4. Resume only after the user confirms the key is set.
-
-### What to fill per scene
-
-For every `[[asset_scenes]]` (or `[[assets.scenes]]`) row in the scaffold, send the corresponding sample frame(s) to Gemini and write back UNIQUE, scene-specific content:
-
-- `description`: visual + factual first (subjects, action, environment, framing), then interpretive.
-- `subjects`, `actions`, `environment`: short noun/verb phrases from the actual frame.
-- `shot_type`, `camera_motion`, `composition`, `colors`: only if visually inferable.
-- `mood`: 1-3 lowercase tags.
-- `semantic_tags`: lowercase, stable vocabulary aligned with the creative plan / VDS when available.
-- `recommended_uses`, `avoid_uses`: short reuse hints (e.g. `["hook"]`, `["high energy transition"]`).
-
-Keep Vietnamese diacritics if the project language is `vi`. Do NOT asciify Vietnamese text.
-
-### Quality gate before saving
-
-Before writing the final `asset_semantics.toml`, verify:
-
-- No two scenes inside the same asset share an identical `description`.
-- No scene still contains the literal substring `TODO:`.
-- All `semantic_tags` are lowercase, no spaces (use `-` or `_`).
-- `privacy_notes` and `quality_notes` are filled when relevant (faces, license plates, audio leakage, shaky / overexposed segments).
-
-Failing the gate means re-run vision analysis on the offending scenes; do not ship a placeholder index downstream to `semantic-asset-mapper`.
-
-### Bundled vision script
-
-Use `analyze_with_gemini.py` to enrich the scaffold in place. It reads the existing TOML, batches sample frames per asset to Gemini Vision, and writes a TOML where every asset and scene has unique semantic content.
-
-```bash
-python skills/asset_semantic_extractor/scripts/analyze_with_gemini.py \
-  --input source/asset_semantics.toml \
-  --output source/asset_semantics.toml \
-  --sample-dir source/asset_samples \
-  --env-file .env \
-  --model gemini-3-flash-preview \
-  --strict
-```
-
-Job-scoped run:
-
-```bash
-python skills/asset_semantic_extractor/scripts/analyze_with_gemini.py \
-  --input jobs/<job_id>/source/asset_semantics.toml \
-  --output jobs/<job_id>/source/asset_semantics.toml \
-  --sample-dir jobs/<job_id>/source/asset_samples \
-  --env-file .env \
-  --model gemini-3-flash-preview \
-  --strict
-```
-
-The script aborts (exit code != 0) if `GEMINI_API_KEY` is missing, no sample frames exist for an asset, all configured Gemini models fail, or `--strict` is set and the quality gate finds duplicate descriptions / `TODO:` leftovers / non-kebab-case tags. Always rerun it (instead of editing the TOML by hand) when raw assets change.
+Nếu các quy tắc trên fail trong TOML đã export, force-reindex file vi phạm bằng `tools.asset_index.router --force` rồi chạy lại exporter.

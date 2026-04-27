@@ -1,53 +1,60 @@
 ---
 name: video-render-plan-builder
-description: Convert VDS, creative plan, transcript, and semantic asset mapping into a detailed TOML edit decision list with crop, timing, text overlays, subtitles, motion, audio, transitions, and render instructions.
+description: Chuyển VDS, creative plan, transcript, và semantic asset mapping thành TOML edit decision list chi tiết với crop, timing, text overlay, subtitle, motion, audio, transition, và chỉ thị render.
 ---
 
 # Video Render Plan Builder
 
-## Script Environment Rule
+## Quy tắc đầu ra (BẮT BUỘC)
 
-Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+- Mọi nội dung do AI/LLM sinh ra (`reason`, ghi chú, nội dung text overlay nếu agent tự sinh) **bắt buộc viết bằng tiếng Việt CÓ DẤU**.
+- Cấm asciify (vd KHÔNG được viết "song chau" thay cho "sống chậm" trong overlay text).
+- Tên trường (`fps`, `crop_anchor`, `transition_in`...), enum (`cover`, `contain`, `cut`, `soft_cut`, `fade_slide`...), CLI flag, file path, model id giữ nguyên tiếng Anh — không dịch.
+- Style ID (`MAIN_TITLE`, `SUBTITLES`, `PUNCH_TAG`...) giữ nguyên SCREAMING_SNAKE_CASE.
 
-## Goal
+## Quy tắc môi trường script
 
-Create the concrete edit decision list used by a renderer. This skill answers how each mapped asset should be edited.
+Trước khi chạy bất kỳ script nào của skill này, đọc file `.env` ở repo-root trước. File này nằm cạnh `jobs/`, `skills/`, và `env.example`. Chỉ kiểm tra các key cần thiết có tồn tại không; tuyệt đối không in giá trị secret. Chỉ dùng `--env-file` không phải repo-root khi user yêu cầu rõ ràng.
 
-Use this skill after `semantic-asset-mapper` has selected assets.
+## Mục tiêu
 
-## Inputs
+Tạo edit decision list cụ thể được renderer sử dụng. Skill này trả lời câu hỏi mỗi asset đã map sẽ được biên tập như thế nào.
 
-- VDS from `video-design-spec-builder`.
+Dùng skill này sau khi `semantic-asset-mapper` đã chọn xong asset.
+
+## Đầu vào
+
+- VDS từ `video-design-spec-builder`.
 - `source/creative_plan.toml`.
 - `source/transcript_word_level.toml`.
 - `source/semantic_mapping.toml`.
-- Optional music/SFX assets.
+- Asset music/SFX tùy chọn.
 
-## Output
+## Đầu ra
 
-Write or return TOML. Default path:
+Ghi hoặc trả về TOML. Đường dẫn mặc định:
 
 ```text
 source/render_plan.toml
 ```
 
-When a video job exists, write to:
+Khi đã có video job, ghi vào:
 
 ```text
 jobs/<job_id>/source/render_plan.toml
 ```
 
-## Workflow
+## Quy trình
 
-1. Set global render settings: fps, resolution, aspect ratio, duration.
-2. Convert each semantic mapping into a render clip.
-3. Decide crop/fit, source trim, playback speed, camera motion, transition, and color treatment.
-4. Add subtitles from word-level transcript with style timing from VDS.
-5. Add overlay text from creative plan.
-6. Add audio plan: voice, BGM, ambience, ducking, fades.
-7. Validate continuity, missing files, overlapping clips, and unreadable text timing.
+1. Set render setting toàn cục: fps, resolution, aspect ratio, duration.
+2. Chuyển mỗi semantic mapping thành render clip.
+3. Quyết định crop/fit, source trim, playback speed, camera motion, transition, và color treatment.
+4. Thêm subtitle từ transcript word-level với style/timing theo VDS.
+5. Thêm overlay text từ creative plan.
+6. Thêm audio plan: voice, BGM, ambience, ducking, fades.
+7. Validate liên tục, file thiếu, clip overlap, và timing text khó đọc.
 
-## TOML Contract
+## Hợp đồng TOML
 
 ```toml
 [render]
@@ -109,16 +116,16 @@ animation_in = "fade_slide"
 animation_out = "fade"
 ```
 
-## Quality Rules
+## Quy tắc chất lượng
 
-- Render clips must not overlap unless a compositing layer is intended.
-- Text must have enough on-screen time to read.
-- Use word-level transcript for subtitles, not approximate script timing.
-- Keep renderer-specific implementation out of this file unless the user requests one renderer only.
+- Render clip không được overlap trừ khi có chủ đích layer compositing.
+- Text phải có đủ thời gian on-screen để đọc.
+- Dùng transcript word-level cho subtitle, không dùng timing xấp xỉ từ script.
+- Giữ implementation đặc thù renderer ra khỏi file này trừ khi user yêu cầu chỉ một renderer.
 
-## Utility Script
+## Script tiện ích
 
-Use the bundled script for deterministic EDL generation and validation:
+Dùng script đi kèm để generate EDL deterministic và validate:
 
 ```bash
 python skills/video_render_plan_builder/scripts/build_render_plan.py build \
@@ -132,7 +139,7 @@ python skills/video_render_plan_builder/scripts/build_render_plan.py validate \
   --render-plan source/render_plan.toml
 ```
 
-For a job-scoped run, pass job paths explicitly:
+Cho job-scoped run, truyền path job tường minh:
 
 ```bash
 python skills/video_render_plan_builder/scripts/build_render_plan.py build \
@@ -144,4 +151,4 @@ python skills/video_render_plan_builder/scripts/build_render_plan.py build \
   --output jobs/<job_id>/source/render_plan.toml
 ```
 
-The script converts semantic mappings into clips, creates subtitles from transcript sentences, carries overlay text from the creative plan, adds voice/music sections, and validates clip/subtitle timing.
+Script chuyển semantic mapping thành clip, sinh subtitle từ câu transcript, mang overlay text từ creative plan, thêm phần voice/music, và validate timing clip/subtitle.

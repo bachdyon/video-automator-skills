@@ -1,50 +1,57 @@
 ---
 name: openai-whisper-word-timestamps
-description: Use OpenAI Whisper or compatible transcription APIs to produce TOML transcript output with sentence-level timestamps and word-level timestamps for narration audio.
+description: Dùng OpenAI Whisper hoặc API transcription tương thích để sinh TOML transcript có timestamp cấp câu và cấp từ cho audio narration.
 ---
 
 # OpenAI Whisper Word Timestamps
 
-## Script Environment Rule
+## Quy tắc đầu ra (BẮT BUỘC)
 
-Before running any bundled script from this skill, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Confirm `OPENAI_API_KEY` exists and pass `.env` with `--env-file`; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+- Mọi nội dung do AI/LLM sinh ra từ transcribe (`sentence`, `word`) **bắt buộc giữ tiếng Việt CÓ DẤU** nếu audio là tiếng Việt — không asciify, không bỏ dấu.
+- Cấm asciify (vd KHÔNG được viết "song cham" thay cho "sống chậm" trong transcript).
+- Tên trường (`audio_path`, `sentence_id`, `confidence`...), tên model (`whisper-1`...), CLI flag, file path giữ nguyên tiếng Anh — không dịch.
+- Mọi ghi chú/lý do warning do agent thêm vào TOML cũng phải là tiếng Việt có dấu.
 
-## Goal
+## Quy tắc môi trường script
 
-Transcribe narration audio into sentence and word timestamps for subtitle generation, scene alignment, and semantic asset mapping.
+Trước khi chạy bất kỳ script nào của skill này, đọc file `.env` ở repo-root trước. File này nằm cạnh `jobs/`, `skills/`, và `env.example`. Xác nhận `OPENAI_API_KEY` tồn tại và truyền `.env` qua `--env-file`; tuyệt đối không in giá trị secret. Chỉ dùng `--env-file` không phải repo-root khi user yêu cầu rõ ràng.
 
-Use this skill when the user provides an audio file and needs word-level timing.
+## Mục tiêu
 
-## Inputs
+Transcribe audio narration thành timestamp câu và từ để sinh subtitle, căn cảnh, và semantic asset mapping.
 
-- Audio file, normally `source/voice.wav` or `source/voice.mp3`.
-- Optional language hint.
-- Optional script text for correction/alignment.
+Dùng skill này khi user cung cấp file audio và cần timing cấp từ.
 
-## Output
+## Đầu vào
 
-Write or return TOML. Default path:
+- File audio, thường là `source/voice.wav` hoặc `source/voice.mp3`.
+- Hint ngôn ngữ tùy chọn.
+- Script text tùy chọn để sửa lỗi/align.
+
+## Đầu ra
+
+Ghi hoặc trả về TOML. Đường dẫn mặc định:
 
 ```text
 source/transcript_word_level.toml
 ```
 
-When a video job exists, write to:
+Khi đã có video job, ghi vào:
 
 ```text
 jobs/<job_id>/source/transcript_word_level.toml
 ```
 
-## Workflow
+## Quy trình
 
-1. Locate the audio file and preserve its path.
-2. Use OpenAI Whisper or a compatible OpenAI transcription model that supports timestamps.
-3. Request word-level timestamps when supported.
-4. Group words into readable sentences.
-5. If a source script exists, use it only to correct obvious transcription spelling and punctuation, not to fabricate timings.
-6. Validate monotonic timestamps and sentence coverage.
+1. Định vị file audio và giữ nguyên path.
+2. Dùng OpenAI Whisper hoặc model transcription OpenAI tương thích có hỗ trợ timestamp.
+3. Yêu cầu timestamp cấp từ khi hỗ trợ.
+4. Gom từ thành câu đọc được.
+5. Nếu có script gốc, chỉ dùng để sửa lỗi chính tả/dấu câu hiển nhiên, không bịa timing.
+6. Validate timestamp tăng đều và phủ đủ câu.
 
-## TOML Contract
+## Hợp đồng TOML
 
 ```toml
 [metadata]
@@ -69,7 +76,7 @@ sentence_id = "S_001"
 confidence = 0.0
 ```
 
-If nested words are requested instead, also support:
+Nếu yêu cầu nested words thay thế, cũng hỗ trợ:
 
 ```toml
 [[sentences]]
@@ -81,16 +88,16 @@ words = [
 ]
 ```
 
-## Quality Rules
+## Quy tắc chất lượng
 
-- Timestamps are seconds as floats.
-- Words must be ordered and non-overlapping within a sentence.
-- Do not silently drop words with uncertain timing; include them with warnings if needed.
-- Keep punctuation in `sentence`, but keep `word` as the spoken token where possible.
+- Timestamp là số thực (giây).
+- Từ phải có thứ tự và không overlap trong cùng 1 câu.
+- Không silently drop từ có timing không chắc chắn; giữ chúng kèm warning khi cần.
+- Giữ dấu câu trong `sentence`, nhưng `word` giữ nguyên token được nói khi có thể.
 
-## Utility Script
+## Script tiện ích
 
-Use the bundled script for deterministic API calls and TOML normalization:
+Dùng script đi kèm để gọi API deterministic và normalize TOML:
 
 ```bash
 python skills/openai_whisper_word_timestamps/scripts/transcribe_word_timestamps.py \
@@ -100,7 +107,7 @@ python skills/openai_whisper_word_timestamps/scripts/transcribe_word_timestamps.
   --language vi
 ```
 
-For a job-scoped run:
+Cho job-scoped run:
 
 ```bash
 python skills/openai_whisper_word_timestamps/scripts/transcribe_word_timestamps.py \
@@ -110,4 +117,4 @@ python skills/openai_whisper_word_timestamps/scripts/transcribe_word_timestamps.
   --language vi
 ```
 
-The script uses `whisper-1` with `response_format=verbose_json` and `timestamp_granularities[]=word`, because OpenAI currently only supports word timestamp granularities on `whisper-1`.
+Script dùng `whisper-1` với `response_format=verbose_json` và `timestamp_granularities[]=word`, vì hiện tại OpenAI chỉ hỗ trợ word timestamp granularities trên `whisper-1`.

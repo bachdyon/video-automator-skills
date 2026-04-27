@@ -31,11 +31,26 @@ DEFAULT_FALLBACK_MODELS = [
 
 
 DEFAULT_PROMPT = (
-    "Analyze this vertical short-form video and produce a reusable Video Design "
-    "Specification (VDS). Preserve storytelling and style DNA, remove all personal "
-    "identifiers, and output sections: metadata, creative intent, narrative "
-    "structure, style DNA, timing, scene blueprint, semantic slots, text/motion/"
-    "audio systems, implementation notes, and reusability rules."
+    "Phân tích video ngắn dọc này và tạo một Video Design Specification (VDS) "
+    "có thể tái sử dụng. Toàn bộ kết quả phải là tiếng Việt có dấu, trừ các "
+    "mã slot kỹ thuật như [MAIN_CHARACTER], SC_01, MAIN_TITLE. Giữ lại cấu "
+    "trúc kể chuyện, nhịp dựng, mood thị giác, hệ chữ, motion và audio "
+    "behavior; loại bỏ hoặc trừu tượng hóa toàn bộ định danh cá nhân. VDS là "
+    "blueprint tái sử dụng, không phải render plan của video mẫu: không đưa "
+    "tổng frame, frame range tuyệt đối, duration chính xác, timestamp cứng, "
+    "tên file, đường dẫn asset, hoặc thông số timing cụ thể của video mẫu vào "
+    "phần hướng dẫn triển khai. Được ghi FPS, tỉ lệ khung hình, và kích thước "
+    "pixel trong Metadata hoặc khuyến nghị kỹ thuật vì đây là thông số định "
+    "dạng cần thiết. Nếu cần nhắc thông số mẫu, phân biệt rõ đâu là tham "
+    "chiếu mẫu và đâu là khuyến nghị tái sử dụng. "
+    "Timing phải dùng phần trăm timeline, khoảng mềm, scene weights, và quy "
+    "tắc co giãn theo target duration. Được hard-code preset định dạng có chủ "
+    "đích như 1080x1920 hoặc 30fps nếu đó là khuyến nghị xuất video dọc. "
+    "Không tạo phần Remotion/Code, implementation notes, hướng dẫn code, "
+    "component map, hoặc pseudocode triển khai. Xuất đúng các phần: metadata, "
+    "mục đích tái sử dụng, creative intent, narrative structure, style DNA, "
+    "timing system, scene blueprint, semantic slots, text system, motion "
+    "system, audio system, và reusability rules."
 )
 
 
@@ -167,7 +182,10 @@ def maybe_save_response(raw_response: Any, output_path: str) -> None:
     else:
         payload = {"response": str(raw_response)}
 
-    output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    output.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, default=str),
+        encoding="utf-8",
+    )
     print(f"[saved] Raw response JSON -> {output}")
 
 

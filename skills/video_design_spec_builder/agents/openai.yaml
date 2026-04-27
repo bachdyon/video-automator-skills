@@ -1,7 +1,7 @@
 interface:
   display_name: "Video Design Spec Builder"
-  short_description: "Build reusable video style specs"
-  default_prompt: "Use $video-design-spec-builder to build a reusable Video Design Specification from this source video."
+  short_description: "Build reusable, parameterized video style specs"
+  default_prompt: "Use $video-design-spec-builder to build a reusable Video Design Specification in Vietnamese with full diacritics, abstracting fixed source-video details into flexible timing and semantic slots."
 
 policy:
   allow_implicit_invocation: true

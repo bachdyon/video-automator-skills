@@ -1,89 +1,97 @@
 ---
 name: video-production-orchestrator
-description: Coordinate the full long-term short-form video pipeline from sample video, new creative request, raw assets, voice generation, transcription, semantic mapping, render planning, and final rendering.
+description: Điều phối toàn bộ pipeline video short-form dài hạn từ video mẫu, yêu cầu sáng tạo mới, raw asset, sinh voice, transcribe, semantic mapping, render plan, đến render cuối cùng.
 ---
 
 # Video Production Orchestrator
 
-## Goal
+## Quy tắc đầu ra (BẮT BUỘC)
 
-Run the complete video-generation pipeline from:
+- Mọi nội dung do AI/LLM sinh ra (status note, lý do skip, cảnh báo gửi user) **bắt buộc viết bằng tiếng Việt CÓ DẤU**.
+- Cấm asciify (vd KHÔNG được viết "hoan thanh" thay cho "hoàn thành").
+- Tên skill (kebab-case), tên stage trong code (`video-job-manager`, `asset-semantic-extractor`...), CLI flag, file path, JSON/TOML key giữ nguyên tiếng Anh — không dịch.
 
-- sample video
-- new user request
-- raw assets
+## Mục tiêu
 
-to:
+Chạy đầy đủ pipeline sinh video từ:
 
-- final rendered short-form video
+- video mẫu
+- yêu cầu user mới
+- raw asset
 
-This skill coordinates other skills. It should not replace their specialized work.
+đến:
 
-## Script Environment Rule
+- video short-form đã render cuối cùng
 
-Before running any script in any pipeline stage, read the repo-root `.env` first. This file lives beside `jobs/`, `skills/`, and `env.example`. Pass `.env` with `--env-file` when the script supports it. Check only whether required keys exist; never print secret values in logs, terminal output, TOML artifacts, or responses. Use a non-root `--env-file` only when the user explicitly provides one.
+Skill này điều phối các skill khác. Không nên thay thế công việc chuyên môn của chúng.
 
-## When To Use
+## Quy tắc môi trường script
 
-Use this skill when the user asks to create, regenerate, preview, or produce a complete new video using a reference/sample style and new source material.
+Trước khi chạy bất kỳ script nào ở bất kỳ stage nào, đọc file `.env` ở repo-root trước. File này nằm cạnh `jobs/`, `skills/`, và `env.example`. Truyền `.env` qua `--env-file` khi script hỗ trợ. Chỉ kiểm tra các key cần thiết có tồn tại không; tuyệt đối không in giá trị secret. Chỉ dùng `--env-file` không phải repo-root khi user yêu cầu rõ ràng.
 
-## Pipeline Order
+## Khi nào dùng
+
+Dùng skill này khi user yêu cầu tạo, regenerate, preview, hoặc sản xuất 1 video mới hoàn chỉnh dùng phong cách tham khảo và source material mới.
+
+## Thứ tự pipeline
 
 0. **Job Workspace**
-   - Use `video-job-manager`.
-   - Input: user request, reference media, raw assets.
-   - Output: `jobs/<job_id>/job.toml` and canonical job folders.
-   - All later paths should be inside this job directory.
+   - Dùng `video-job-manager`.
+   - Input: yêu cầu user, reference media, raw asset.
+   - Output: `jobs/<job_id>/job.toml` và các folder job chuẩn.
+   - Mọi path sau này nên nằm trong job directory này.
 
 1. **Reference Style**
-   - Use `video-design-spec-builder`.
-   - Input: sample/reference video.
-   - Output: reusable VDS at `jobs/<job_id>/source/vds.md`.
+   - Dùng `video-design-spec-builder`.
+   - Input: video mẫu/tham khảo.
+   - Output: VDS dùng đi dùng lại tại `jobs/<job_id>/source/vds.md`.
 
 2. **Creative Plan**
-   - Use `video-creative-planner`.
-   - Input: user brief + VDS.
+   - Dùng `video-creative-planner`.
+   - Input: brief user + VDS.
    - Output: `jobs/<job_id>/source/creative_plan.toml`.
 
 3. **Voice**
-   - Use `ausynclab-voice`.
-   - Input: voiceover script from creative plan.
-   - Output: `jobs/<job_id>/source/voice.wav` or `.mp3`, plus `jobs/<job_id>/source/voice_selection.toml`.
+   - Dùng `ausynclab-voice`.
+   - Input: kịch bản voiceover từ creative plan.
+   - Output: `jobs/<job_id>/source/voice.wav` hoặc `.mp3`, kèm `jobs/<job_id>/source/voice_selection.toml`.
 
 4. **Transcript Timing**
-   - Use `openai-whisper-word-timestamps`.
-   - Input: generated voice audio.
+   - Dùng `openai-whisper-word-timestamps`.
+   - Input: audio voice đã sinh.
    - Output: `jobs/<job_id>/source/transcript_word_level.toml`.
 
 5. **Asset Index**
-   - Use `asset-semantic-extractor`.
-   - Input: raw image/video assets.
+   - Dùng `asset-semantic-extractor`.
+   - Input: ảnh/video raw.
    - Output: `jobs/<job_id>/source/asset_semantics.toml`.
+   - Khi watcher asset-index (`tools/asset_index`) đang chạy, ưu tiên `python -m tools.asset_index.exporter <raw-folder> --output ...` để mỗi file chỉ gọi Gemini tối đa 1 lần trên toàn project. Watcher đã pre-analyze mọi thứ thả vào `raw_assets/` hoặc `jobs/*/input/raw_assets/`; exporter chỉ đọc `.asset_index/index.db` và viết cùng hợp đồng TOML. File chưa index sẽ được auto-index theo nhu cầu. Chỉ skip toàn bộ stage này khi user opt-out khỏi index.
 
 6. **Semantic Mapping (baseline 1-1)**
-   - Use `semantic-asset-mapper`.
+   - Dùng `semantic-asset-mapper`.
    - Input: creative plan + transcript + asset semantics + VDS.
-   - Output: `jobs/<job_id>/source/semantic_mapping.toml` (one best-fit asset per scene; rows with `SOURCE_SHORTER_THAN_TIMELINE` warnings are intentionally left for the next step).
+   - Output: `jobs/<job_id>/source/semantic_mapping.toml` (1 asset best-fit cho mỗi scene; row có warning `SOURCE_SHORTER_THAN_TIMELINE` được giữ chủ ý cho bước sau).
+   - Với pool `raw_assets/` lớn, ưu tiên `--use-vector-index` để mapper truy vấn trực tiếp `.asset_index/index.db` cho từng scene_intent thay vì scan TOML pre-build to tướng.
 
-7. **Shot Coverage Decisions (creative)**
-   - Use `shot-coverage-planner`.
+7. **Shot Coverage Decisions (sáng tạo)**
+   - Dùng `shot-coverage-planner`.
    - Input: baseline `semantic_mapping.toml` + asset semantics + creative plan + transcript.
-   - Process: run `detect_gaps.py` to produce `coverage_context.json`, the agent (this assistant) writes `coverage_decisions.json` applying the cutaway / slowdown / hold framework, then `apply_patch.py` rewrites `semantic_mapping.toml` with sub-clips.
-   - Output: revised `jobs/<job_id>/source/semantic_mapping.toml` plus `coverage_context.json` and `coverage_decisions.json` for traceability.
+   - Quy trình: chạy `detect_gaps.py` để sinh `coverage_context.json`, agent (assistant này) viết `coverage_decisions.json` áp khung cutaway / slowdown / hold, rồi `apply_patch.py` viết lại `semantic_mapping.toml` với các sub-clip.
+   - Output: `jobs/<job_id>/source/semantic_mapping.toml` đã chỉnh sửa kèm `coverage_context.json` và `coverage_decisions.json` để truy vết.
 
 8. **Render Plan**
-   - Use `video-render-plan-builder`.
-   - Input: VDS + creative plan + transcript + revised semantic mapping.
+   - Dùng `video-render-plan-builder`.
+   - Input: VDS + creative plan + transcript + semantic mapping đã chỉnh sửa.
    - Output: `jobs/<job_id>/source/render_plan.toml`.
 
 9. **Render**
-   - Use `video-renderer`, which must verify/install and load the official `$remotion-best-practices` skill before creating or updating the job-scoped Remotion project.
-   - Input: render plan + media files.
-   - Output: job-scoped Remotion project at `jobs/<job_id>/remotion/`, then `jobs/<job_id>/output/final_video.mp4`.
+   - Dùng `video-renderer`, skill này phải verify/install và load skill chính thức `$remotion-best-practices` trước khi tạo hoặc cập nhật Remotion project job-scoped.
+   - Input: render plan + media file.
+   - Output: Remotion project job-scoped tại `jobs/<job_id>/remotion/`, sau đó `jobs/<job_id>/output/final_video.mp4`.
 
-## Artifact Contract
+## Hợp đồng artifact
 
-Default workspace layout:
+Layout workspace mặc định:
 
 ```text
 jobs/<job_id>/
@@ -127,34 +135,34 @@ jobs/<job_id>/
     validation.log
 ```
 
-## Checkpoints
+## Checkpoint
 
-Before moving to the next step, verify:
+Trước khi chuyển sang bước tiếp theo, verify:
 
-- Job exists and `job.toml` tracks the request and inputs.
-- VDS exists and contains style/timing guidance.
-- Creative plan has script and scene intents.
-- Voice audio exists and is playable.
-- Transcript covers the full voice duration.
-- Asset semantics cover all provided assets.
-- Semantic mapping is continuous and each row has `start`, `end`, `file_path`, and `reason`.
-- Every scene flagged in `coverage_context.json` has a matching decision in `coverage_decisions.json` (no silent skips).
-- Render plan references existing files only.
-- Final render exists and has audio.
+- Job tồn tại và `job.toml` track yêu cầu và input.
+- VDS tồn tại và chứa hướng dẫn style/timing.
+- Creative plan có script và scene intents.
+- Audio voice tồn tại và playable.
+- Transcript phủ toàn bộ thời lượng voice.
+- Asset semantics phủ mọi asset đã cung cấp.
+- Semantic mapping liên tục và mỗi row có `start`, `end`, `file_path`, và `reason`.
+- Mọi scene bị flag trong `coverage_context.json` đều có decision tương ứng trong `coverage_decisions.json` (không skip âm thầm).
+- Render plan chỉ tham chiếu file tồn tại.
+- Render cuối tồn tại và có audio.
 
-## Recovery Rules
+## Quy tắc khôi phục
 
-- If request, reference, or raw inputs are registered/changed, use `video-job-manager` to mark affected downstream stages stale.
-- If voice changes, rerun transcript, mapping, render plan, and render.
-- If assets change, rerun asset semantics, mapping, render plan, and render.
-- If VDS changes, rerun creative plan, mapping, render plan, and render.
-- If only crop/transition/text styling changes, rerun render plan and render.
-- If only renderer code changes, rerun render.
+- Nếu request, reference, hay raw input được đăng ký/thay đổi, dùng `video-job-manager` để đánh dấu các stage downstream bị stale.
+- Nếu voice thay đổi, rerun transcript, mapping, render plan, và render.
+- Nếu asset thay đổi trong `raw_assets/` hoặc `jobs/*/input/raw_assets/`, watcher asset-index tự cập nhật `.asset_index/index.db`; rerun `asset-semantic-extractor` (giờ chỉ re-export từ DB), rồi mapping, render plan, và render.
+- Nếu VDS thay đổi, rerun creative plan, mapping, render plan, và render.
+- Nếu chỉ crop/transition/text styling thay đổi, rerun render plan và render.
+- Nếu chỉ code renderer thay đổi, rerun render.
 
-## Quality Rules
+## Quy tắc chất lượng
 
-- Keep each stage's output on disk so the pipeline is debuggable.
-- Do not hide failures by skipping stages.
-- Prefer updating the smallest stale artifact rather than regenerating everything.
-- Ask the user only for missing credentials, missing source media, or creative decisions that cannot be inferred safely.
-- Mark each completed stage in `job.toml` via `video-job-manager`.
+- Giữ output mỗi stage trên disk để pipeline có thể debug.
+- Không che lỗi bằng cách skip stage.
+- Ưu tiên cập nhật artifact stale nhỏ nhất hơn là regenerate mọi thứ.
+- Chỉ hỏi user về credentials thiếu, source media thiếu, hoặc quyết định sáng tạo không thể infer an toàn.
+- Đánh dấu mỗi stage hoàn thành trong `job.toml` qua `video-job-manager`.
