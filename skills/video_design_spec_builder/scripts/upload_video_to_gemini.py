@@ -6,7 +6,7 @@ Usage:
   python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py \
     --video-path /absolute/path/video.mp4 \
     --env-file .env \
-    --model gemini-3.1-pro-preview \
+    --model gemini-3-flash-preview \
     --prompt "Create a reusable VDS from this video."
 """
 
@@ -22,7 +22,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
 from pipeline_utils import die, env_value
 
-DEFAULT_MODEL = "gemini-3.1-pro-preview"
+DEFAULT_MODEL = "gemini-3-flash-preview"
 DEFAULT_FALLBACK_MODELS = [
     "gemini-3-flash-preview",
     "gemini-2.5-pro",
@@ -72,7 +72,7 @@ def parse_args() -> argparse.Namespace:
         "--model",
         default=DEFAULT_MODEL,
         help=(
-            "Primary Gemini model. Recommended default: gemini-3.1-pro-preview "
+            "Primary Gemini model. Recommended default: gemini-3-flash-preview"
             "for deep analysis."
         ),
     )

@@ -182,12 +182,11 @@ Skill này có script upload video lên Gemini API để phân tích video dài/
   - Copy `env.example` sang `.env` ở cùng cấp với `jobs/` và `skills/`, rồi điền `GEMINI_API_KEY`.
   - Không commit `.env`; chỉ commit `env.example`.
 - Chạy script:
-  - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --env-file .env --model gemini-3.1-pro-preview`
+  - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --env-file .env --model gemini-3-flash-preview`
   - Có thể override fallback chain:
-    - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --env-file .env --model gemini-3.1-pro-preview --fallback-models gemini-3-flash-preview,gemini-2.5-pro,gemini-2.5-flash`
+    - `python skills/video_design_spec_builder/scripts/upload_video_to_gemini.py --video-path /path/to/video.mp4 --env-file .env --model gemini-3-flash-preview --fallback-models gemini-3-flash-preview,gemini-2.5-pro,gemini-2.5-flash`
 
 Model gợi ý:
 
-- `gemini-3.1-pro-preview`: ưu tiên chất lượng phân tích sâu cho VDS.
-- `gemini-3-flash-preview`: nhanh hơn khi cần nhiều vòng thử.
+- `gemini-3-flash-preview`: ưu tiên chất lượng phân tích sâu cho VDS.
 - `gemini-2.5-pro`: fallback ổn định cho production.

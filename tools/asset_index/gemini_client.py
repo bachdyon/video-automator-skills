@@ -25,7 +25,7 @@ GEMINI_URL = (
 )
 
 DEFAULT_MODEL = "gemini-3-flash-preview"
-DEFAULT_FALLBACKS = ("gemini-3.1-pro-preview", "gemini-2.5-pro", "gemini-2.5-flash")
+DEFAULT_FALLBACKS = ("gemini-3-flash-preview", "gemini-2.5-pro", "gemini-2.5-flash")
 
 
 class GeminiError(RuntimeError):

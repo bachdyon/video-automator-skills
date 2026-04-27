@@ -32,7 +32,7 @@ GEMINI_URL = (
 )
 
 DEFAULT_MODEL = "gemini-3-flash-preview"
-DEFAULT_FALLBACKS = ["gemini-3.1-pro-preview", "gemini-2.5-pro", "gemini-2.5-flash"]
+DEFAULT_FALLBACKS = ["gemini-2.5-pro", "gemini-2.5-flash"]
 
 PROMPT_TEMPLATE = """Bạn là chuyên gia phân tích footage cho video vlog short-form (TikTok/Reels) tiếng Việt.
 

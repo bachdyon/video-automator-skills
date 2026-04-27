@@ -54,6 +54,7 @@ This index is content-addressed (SHA-256), so re-running it on the same files is
 - `$audio-deduplicate`: Remove consecutive repeated speech from WAV or MP3 files using Whisper timestamps and export a cleaned audio file.
 - `$ausynclab-voice`: Work with AusyncLab voices and generate narration audio.
 - `$fal-image-generator`: Synthesize AI images via fal.ai (default `fal-ai/nano-banana`) from prompts or scene_intents, with optional reference images for character lock; saves into `jobs/<id>/input/raw_assets/images/ai_generated/`.
+- `$video-downloader`: Download TikTok videos, slideshow images, or audio through TikWM into `raw_assets/` or `jobs/<id>/input/raw_assets/`.
 - `$word-timestamps-extractor`: Extract narration transcript with sentence and word timestamps.
 - `$remotion-best-practices`: Official Remotion skill installed from `remotion-dev/skills`; use for all Remotion code and project work.
 - `$semantic-asset-mapper`: Match transcript or scene intents to indexed image and video assets.
