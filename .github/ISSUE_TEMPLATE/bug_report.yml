@@ -1,0 +1,92 @@
+name: Bug report
+description: Bao loi khi dung VAS / video-automator-skills
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cam on ban da bao loi. Hay dien du thong tin de issue co the duoc reproduce nhanh.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Loi la gi?
+      description: Mo ta ngan gon loi ban gap.
+      placeholder: "Vi du: watcher khong index file moi trong raw_assets/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Cach reproduce
+      description: Cac buoc cu the de gap loi.
+      placeholder: |
+        1. Chay ...
+        2. Tha file vao ...
+        3. Mo ...
+        4. Thay loi ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ket qua mong doi
+      placeholder: "Vi du: asset duoc index va xuat hien trong search."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Ket qua thuc te
+      placeholder: "Vi du: processed_count khong tang, search khong thay asset."
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: He dieu hanh
+      placeholder: "macOS 15.4 / Windows 11 / Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: input
+    id: install_method
+    attributes:
+      label: Cach cai dat
+      placeholder: "Install.command / Install.bat / cai tay"
+    validations:
+      required: false
+
+  - type: input
+    id: ide
+    attributes:
+      label: IDE / agent dang su dung
+      placeholder: "Codex / Cursor / Claude Code / VS Code / khac"
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model dang su dung
+      placeholder: "GPT-5 / Claude Sonnet 4.5 / Gemini 2.5 Pro / khac"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log / loi terminal
+      description: Dan log lien quan. Khong dan API key hoac secret.
+      render: shell
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Thong tin them
+      description: Job ID, file path, skill dang chay, anh chup man hinh, hoac ghi chu khac.
