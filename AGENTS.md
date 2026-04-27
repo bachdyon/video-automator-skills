@@ -53,9 +53,11 @@ This index is content-addressed (SHA-256), so re-running it on the same files is
 - `$asset-semantic-extractor`: Analyze image or video assets and produce a TOML semantic index for video assembly.
 - `$audio-deduplicate`: Remove consecutive repeated speech from WAV or MP3 files using Whisper timestamps and export a cleaned audio file.
 - `$ausynclab-voice`: Work with AusyncLab voices and generate narration audio.
-- `$openai-whisper-word-timestamps`: Transcribe narration audio with sentence and word timestamps.
+- `$fal-image-generator`: Synthesize AI images via fal.ai (default `fal-ai/nano-banana`) from prompts or scene_intents, with optional reference images for character lock; saves into `jobs/<id>/input/raw_assets/images/ai_generated/`.
+- `$word-timestamps-extractor`: Extract narration transcript with sentence and word timestamps.
 - `$remotion-best-practices`: Official Remotion skill installed from `remotion-dev/skills`; use for all Remotion code and project work.
 - `$semantic-asset-mapper`: Match transcript or scene intents to indexed image and video assets.
+- `$shot-coverage-planner`: Resolve coverage shortage and asset repetition in baseline mappings via cutaway, slowdown, hold + Ken Burns decisions.
 - `$video-creative-planner`: Build a production-ready creative plan, script, scene intents, and asset requirements.
 - `$video-design-spec-builder`: Build reusable Video Design Specifications from source videos.
 - `$video-job-manager`: Create and manage isolated video production jobs and canonical paths.

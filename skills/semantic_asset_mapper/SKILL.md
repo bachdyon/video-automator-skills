@@ -25,7 +25,7 @@ Dùng skill này sau khi đã có transcript/scene intents và asset semantic in
 ## Đầu vào
 
 - `source/creative_plan.toml` từ `video-creative-planner`.
-- `source/transcript_word_level.toml` từ `openai-whisper-word-timestamps`.
+- `source/transcript_word_level.toml` từ `$word-timestamps-extractor`.
 - `source/asset_semantics.toml` từ `asset-semantic-extractor` **HOẶC** asset-index SQLite vector DB tại `.asset_index/index.db` (ưu tiên khi watcher đang chạy).
 - VDS tùy chọn cho ràng buộc về pacing và vai trò scene.
 

@@ -13,8 +13,8 @@ flowchart LR
     semantics --> planner[creative_plan.toml]
     planner --> mapper[timeline.toml]
     voice[ausynclab_voice<br/>narration] --> dedupe[audio_deduplicate]
-    dedupe --> whisper[whisper word timestamps]
-    whisper --> renderPlan[render_plan.toml]
+    dedupe --> timestamps[word_timestamps_extractor<br/>transcript_word_level.toml]
+    timestamps --> renderPlan[render_plan.toml]
     mapper --> renderPlan
     renderPlan --> renderer[final.mp4]
 ```

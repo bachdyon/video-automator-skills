@@ -1,0 +1,7 @@
+interface:
+  display_name: "Word Timestamps Extractor"
+  short_description: "Extract transcript with word timestamps"
+  default_prompt: "Use $word-timestamps-extractor to extract this narration audio into a transcript with sentence and word timestamps."
+
+policy:
+  allow_implicit_invocation: true

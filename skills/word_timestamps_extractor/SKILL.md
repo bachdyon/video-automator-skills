@@ -1,9 +1,9 @@
 ---
-name: openai-whisper-word-timestamps
-description: Dùng OpenAI Whisper hoặc API transcription tương thích để sinh TOML transcript có timestamp cấp câu và cấp từ cho audio narration.
+name: word-timestamps-extractor
+description: Trích xuất transcript narration có timestamp cấp câu và cấp từ; script hiện dùng OpenAI Whisper hoặc API transcription tương thích.
 ---
 
-# OpenAI Whisper Word Timestamps
+# Word Timestamps Extractor
 
 ## Quy tắc đầu ra (BẮT BUỘC)
 
@@ -18,7 +18,7 @@ Trước khi chạy bất kỳ script nào của skill này, đọc file `.env` 
 
 ## Mục tiêu
 
-Transcribe audio narration thành timestamp câu và từ để sinh subtitle, căn cảnh, và semantic asset mapping.
+Trích xuất audio narration thành transcript có timestamp câu và từ để sinh subtitle, căn cảnh, và semantic asset mapping.
 
 Dùng skill này khi user cung cấp file audio và cần timing cấp từ.
 
@@ -100,7 +100,7 @@ words = [
 Dùng script đi kèm để gọi API deterministic và normalize TOML:
 
 ```bash
-python skills/openai_whisper_word_timestamps/scripts/transcribe_word_timestamps.py \
+python skills/word_timestamps_extractor/scripts/transcribe_word_timestamps.py \
   --audio source/voice.wav \
   --output source/transcript_word_level.toml \
   --env-file .env \
@@ -110,7 +110,7 @@ python skills/openai_whisper_word_timestamps/scripts/transcribe_word_timestamps.
 Cho job-scoped run:
 
 ```bash
-python skills/openai_whisper_word_timestamps/scripts/transcribe_word_timestamps.py \
+python skills/word_timestamps_extractor/scripts/transcribe_word_timestamps.py \
   --audio jobs/<job_id>/source/voice.wav \
   --output jobs/<job_id>/source/transcript_word_level.toml \
   --env-file .env \

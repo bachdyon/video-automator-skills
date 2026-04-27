@@ -1,0 +1,4 @@
+# fal-image-generator uses urllib (stdlib) for fal.ai REST queue API.
+# No third-party deps required. This file is a placeholder so users know
+# the skill is dependency-free; ffprobe (from ffmpeg) is only needed
+# downstream by the asset-index watcher, not this skill itself.

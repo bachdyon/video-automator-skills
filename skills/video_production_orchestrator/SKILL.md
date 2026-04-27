@@ -57,34 +57,43 @@ Dùng skill này khi user yêu cầu tạo, regenerate, preview, hoặc sản xu
    - Output: `jobs/<job_id>/source/voice.wav` hoặc `.mp3`, kèm `jobs/<job_id>/source/voice_selection.toml`.
 
 4. **Transcript Timing**
-   - Dùng `openai-whisper-word-timestamps`.
+   - Dùng `$word-timestamps-extractor`.
    - Input: audio voice đã sinh.
    - Output: `jobs/<job_id>/source/transcript_word_level.toml`.
 
-5. **Asset Index**
+5. **AI Image Synthesis (CÓ ĐIỀU KIỆN)**
+   - Dùng `fal-image-generator`. Chỉ chạy khi:
+     - User chỉ định raw assets sẽ là AI-generated, hoặc
+     - `creative_plan.toml` có `scene_intents[].asset_requirements` chứa `ai_generated` / `ai_image`, hoặc
+     - `jobs/<job_id>/input/raw_assets/` rỗng và user không định cung cấp footage.
+   - Input: `creative_plan.toml` + (tùy chọn) ảnh tham chiếu nhân vật ở `jobs/<job_id>/input/reference/`.
+   - Output: PNG vào `jobs/<job_id>/input/raw_assets/images/ai_generated/` + log `jobs/<job_id>/source/ai_image_generation.toml`.
+   - Yêu cầu `FAL_API_KEY` trong `.env`. Skip stage này nếu user đã có raw assets thật.
+
+6. **Asset Index**
    - Dùng `asset-semantic-extractor`.
-   - Input: ảnh/video raw.
+   - Input: ảnh/video raw (kể cả ảnh AI vừa sinh ở stage 5 nếu có).
    - Output: `jobs/<job_id>/source/asset_semantics.toml`.
    - Khi watcher asset-index (`tools/asset_index`) đang chạy, ưu tiên `python -m tools.asset_index.exporter <raw-folder> --output ...` để mỗi file chỉ gọi Gemini tối đa 1 lần trên toàn project. Watcher đã pre-analyze mọi thứ thả vào `raw_assets/` hoặc `jobs/*/input/raw_assets/`; exporter chỉ đọc `.asset_index/index.db` và viết cùng hợp đồng TOML. File chưa index sẽ được auto-index theo nhu cầu. Chỉ skip toàn bộ stage này khi user opt-out khỏi index.
 
-6. **Semantic Mapping (baseline 1-1)**
+7. **Semantic Mapping (baseline 1-1)**
    - Dùng `semantic-asset-mapper`.
    - Input: creative plan + transcript + asset semantics + VDS.
    - Output: `jobs/<job_id>/source/semantic_mapping.toml` (1 asset best-fit cho mỗi scene; row có warning `SOURCE_SHORTER_THAN_TIMELINE` được giữ chủ ý cho bước sau).
    - Với pool `raw_assets/` lớn, ưu tiên `--use-vector-index` để mapper truy vấn trực tiếp `.asset_index/index.db` cho từng scene_intent thay vì scan TOML pre-build to tướng.
 
-7. **Shot Coverage Decisions (sáng tạo)**
+8. **Shot Coverage Decisions (sáng tạo)**
    - Dùng `shot-coverage-planner`.
    - Input: baseline `semantic_mapping.toml` + asset semantics + creative plan + transcript.
    - Quy trình: chạy `detect_gaps.py` để sinh `coverage_context.json`, agent (assistant này) viết `coverage_decisions.json` áp khung cutaway / slowdown / hold, rồi `apply_patch.py` viết lại `semantic_mapping.toml` với các sub-clip.
    - Output: `jobs/<job_id>/source/semantic_mapping.toml` đã chỉnh sửa kèm `coverage_context.json` và `coverage_decisions.json` để truy vết.
 
-8. **Render Plan**
+9. **Render Plan**
    - Dùng `video-render-plan-builder`.
    - Input: VDS + creative plan + transcript + semantic mapping đã chỉnh sửa.
    - Output: `jobs/<job_id>/source/render_plan.toml`.
 
-9. **Render**
+10. **Render**
    - Dùng `video-renderer`, skill này phải verify/install và load skill chính thức `$remotion-best-practices` trước khi tạo hoặc cập nhật Remotion project job-scoped.
    - Input: render plan + media file.
    - Output: Remotion project job-scoped tại `jobs/<job_id>/remotion/`, sau đó `jobs/<job_id>/output/final_video.mp4`.
@@ -108,6 +117,7 @@ jobs/<job_id>/
     voice.wav
     transcript_word_level.toml
     asset_semantics.toml
+    ai_image_generation.toml
     semantic_mapping.toml
     coverage_context.json
     coverage_decisions.json
