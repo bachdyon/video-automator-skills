@@ -1,7 +1,76 @@
+# --- Secrets ---
 .env
 .env.*
 !.env.example
 !env.example
+
+# --- Python ---
 __pycache__/
 *.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- Virtualenv ---
+.venv/
+
+# --- Node (generic, ngoài jobs/) ---
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- OS metadata ---
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- IDE / Editor ---
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# --- Logs & temp ---
+*.log
+*.tmp
+*.bak
+
+# --- SQLite runtime sidecar (phòng khi DB nằm ngoài .asset_index/) ---
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db-journal
+*.db-wal
+*.db-shm
+
+# --- Pipeline runtime ---
 jobs/
+.asset_index/
+
+# --- raw_assets pool: track folder layout, ignore large media files ---
+raw_assets/*
+!raw_assets/.gitkeep
+!raw_assets/README.md
+!raw_assets/images/
+!raw_assets/videos/
+!raw_assets/audio/
+raw_assets/images/*
+!raw_assets/images/.gitkeep
+raw_assets/videos/*
+!raw_assets/videos/.gitkeep
+raw_assets/audio/*
+!raw_assets/audio/.gitkeep

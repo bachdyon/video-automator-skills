@@ -1,0 +1,11 @@
+watchdog>=4.0
+sqlite-vec>=0.1.6
+# apsw bundles its own SQLite (with loadable-extension support) and has
+# prebuilt wheels for macOS, Windows, and Linux. We need it because the
+# python.org macOS Python ships with a SQLite that disables load_extension.
+apsw>=3.46
+Pillow>=10.0
+psutil>=5.9
+# certifi guarantees a working CA bundle inside virtualenvs even if the user
+# never ran "Install Certificates.command" on python.org Python for macOS.
+certifi>=2024.7.4
