@@ -1,7 +1,7 @@
 # video-automator-skills
 
 <p align="center">
-  <img src="docs/logo/light.svg" alt="video automator skills" width="180" height="23">
+  <img src="logo-dark.svg" alt="video automator skills" width="180" height="23">
 </p>
 
 > Kho kỹ năng (skills) để xây pipeline sản xuất video ngắn bằng agent: lập kế hoạch, xử lý audio, ánh xạ asset, dựng timeline và render.
