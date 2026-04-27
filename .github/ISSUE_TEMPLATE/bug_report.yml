@@ -1,55 +1,55 @@
 name: Bug report
-description: Bao loi khi dung VAS / video-automator-skills
+description: Báo lỗi khi dùng VAS / video-automator-skills
 title: "[Bug]: "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Cam on ban da bao loi. Hay dien du thong tin de issue co the duoc reproduce nhanh.
+        Cảm ơn bạn đã báo lỗi. Hãy điền đủ thông tin để issue có thể được reproduce nhanh.
 
   - type: textarea
     id: summary
     attributes:
-      label: Loi la gi?
-      description: Mo ta ngan gon loi ban gap.
-      placeholder: "Vi du: watcher khong index file moi trong raw_assets/..."
+      label: Lỗi là gì?
+      description: Mô tả ngắn gọn lỗi bạn gặp.
+      placeholder: "Ví dụ: watcher không index file mới trong raw_assets/..."
     validations:
       required: true
 
   - type: textarea
     id: steps
     attributes:
-      label: Cach reproduce
-      description: Cac buoc cu the de gap loi.
+      label: Cách reproduce
+      description: Các bước cụ thể để gặp lỗi.
       placeholder: |
-        1. Chay ...
-        2. Tha file vao ...
-        3. Mo ...
-        4. Thay loi ...
+        1. Chạy ...
+        2. Thả file vào ...
+        3. Mở ...
+        4. Thấy lỗi ...
     validations:
       required: true
 
   - type: textarea
     id: expected
     attributes:
-      label: Ket qua mong doi
-      placeholder: "Vi du: asset duoc index va xuat hien trong search."
+      label: Kết quả mong đợi
+      placeholder: "Ví dụ: asset được index và xuất hiện trong search."
     validations:
       required: true
 
   - type: textarea
     id: actual
     attributes:
-      label: Ket qua thuc te
-      placeholder: "Vi du: processed_count khong tang, search khong thay asset."
+      label: Kết quả thực tế
+      placeholder: "Ví dụ: processed_count không tăng, search không thấy asset."
     validations:
       required: true
 
   - type: input
     id: os
     attributes:
-      label: He dieu hanh
+      label: Hệ điều hành
       placeholder: "macOS 15.4 / Windows 11 / Ubuntu 24.04"
     validations:
       required: true
@@ -57,36 +57,36 @@ body:
   - type: input
     id: install_method
     attributes:
-      label: Cach cai dat
-      placeholder: "Install.command / Install.bat / cai tay"
+      label: Cách cài đặt
+      placeholder: "Install.command / Install.bat / cài tay"
     validations:
       required: false
 
   - type: input
     id: ide
     attributes:
-      label: IDE / agent dang su dung
-      placeholder: "Codex / Cursor / Claude Code / VS Code / khac"
+      label: IDE / agent đang sử dụng
+      placeholder: "Codex / Cursor / Claude Code / VS Code / khác"
     validations:
       required: true
 
   - type: input
     id: model
     attributes:
-      label: Model dang su dung
-      placeholder: "GPT-5 / Claude Sonnet 4.5 / Gemini 2.5 Pro / khac"
+      label: Model đang sử dụng
+      placeholder: "GPT-5 / Claude Sonnet 4.5 / Gemini 2.5 Pro / khác"
     validations:
       required: false
 
   - type: textarea
     id: logs
     attributes:
-      label: Log / loi terminal
-      description: Dan log lien quan. Khong dan API key hoac secret.
+      label: Log / lỗi terminal
+      description: Dán log liên quan. Không dán API key hoặc secret.
       render: shell
 
   - type: textarea
     id: context
     attributes:
-      label: Thong tin them
-      description: Job ID, file path, skill dang chay, anh chup man hinh, hoac ghi chu khac.
+      label: Thông tin thêm
+      description: Job ID, file path, skill đang chạy, ảnh chụp màn hình, hoặc ghi chú khác.
