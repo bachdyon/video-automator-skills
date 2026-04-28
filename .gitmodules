@@ -2,3 +2,7 @@
 	path = docs
 	url = https://github.com/bachdyon/docs.git
 	branch = main
+[submodule "showcases"]
+	path = showcases
+	url = https://github.com/bachdyon/vas-showcases.git
+	branch = main
