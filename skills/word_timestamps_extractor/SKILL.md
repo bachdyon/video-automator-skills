@@ -27,6 +27,7 @@ Dùng skill này khi user cung cấp file audio và cần timing cấp từ.
 - File audio, thường là `source/voice.wav` hoặc `source/voice.mp3`.
 - Hint ngôn ngữ tùy chọn.
 - Script text tùy chọn để sửa lỗi/align.
+- Nếu narration vừa được **hậu xử lý tốc độ** (skill `ausynclab-voice`, `speed-pydub` / `voice_speed_pydub.py`) và ghi đè `voice.wav`, phải **chạy lại** bước transcribe trên file âm thanh mới trước khi dùng transcript cho subtitle hoặc semantic mapping.
 
 ## Đầu ra
 

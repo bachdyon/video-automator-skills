@@ -54,6 +54,13 @@ jobs/<job_id>/source/render_plan.toml
 6. Thêm audio plan: voice, BGM, ambience, ducking, fades.
 7. Validate liên tục, file thiếu, clip overlap, và timing text khó đọc.
 
+## Quy tắc text layer handoff (BẮT BUỘC)
+
+- Skill này chỉ tạo **data contract** cho text (`[[overlays]]`, `[[subtitles]]`, style refs, timing).
+- Mọi text trong render plan phải được thiết kế để Remotion tiêu thụ trực tiếp; không phát sinh hướng dẫn burn text bằng FFmpeg/ImageMagick/Python.
+- Không thêm field/hint dạng `ffmpeg_drawtext`, `imagemagick_caption`, `python_pillow_text` hoặc bất kỳ cơ chế tương đương.
+- Nếu job yêu cầu “không subtitle”, đặt `subtitles = []` hoặc skip tạo subtitle ở render plan; vẫn giữ text overlay nếu creative yêu cầu, và renderer Remotion chịu trách nhiệm vẽ.
+
 ## Hợp đồng TOML
 
 ```toml

@@ -25,6 +25,13 @@ Trước khi bắt đầu công việc Remotion, verify skill chính thức tồ
 
 Trước khi chạy bất kỳ renderer hoặc script nào của skill này, đọc file `.env` ở repo-root trước. File này nằm cạnh `jobs/`, `skills/`, và `env.example`. Chỉ kiểm tra các key cần thiết có tồn tại không; tuyệt đối không in giá trị secret. Chỉ dùng `--env-file` không phải repo-root khi user yêu cầu rõ ràng.
 
+## Quy tắc render text ownership (BẮT BUỘC)
+
+- Mọi chữ xuất hiện trên frame video (headline, lower-third, brand tag, date stamp, subtitle, reaction text, source credit) **phải do Remotion render** bằng component/layer trong `jobs/<job_id>/remotion/src/`.
+- **Cấm tuyệt đối** render chữ bằng FFmpeg filters (`drawtext`, `subtitles`, `ass`), ImageMagick (`magick`, `convert`), hoặc script Python để burn text trực tiếp lên pixel.
+- FFmpeg chỉ được dùng cho encode/mux/concat/trim media sau khi phần hình chữ đã được Remotion xuất ra.
+- Nếu phát hiện pipeline hiện tại đang dùng FFmpeg/ImageMagick/Python để tạo chữ, phải dừng và migrate text layer sang Remotion trước khi render final.
+
 ## Đầu vào
 
 - `source/render_plan.toml`.
@@ -171,6 +178,17 @@ const fitFontSize = (
 ```
 
 Các quy tắc này bổ sung cho giới hạn `max_chars` phía planner trong `video-creative-planner` và validator trong `video-render-plan-builder`. Coi đây là defense-in-depth: planner ràng buộc, builder cảnh báo, renderer bảo đảm.
+
+## News intro + video dưới overlay (layout bắt buộc khi scaffold template kiểu bản tin)
+
+Khi VDS hoặc brief mô tả **intro tin tức + video gốc phía sau / lower graphic**, mọi implementation Remotion phải tuân:
+
+1. **Intro chrome nằm tối thiểu nửa dưới frame.** Hình chữ nhật full width, `bottom: 0`, `height` ~45–50%: **chỉ một dải % nhỏ ở mép trên** gradient tiếp giáp video; **phần còn lại nền đặc** `rgba(..., 0.9)`. **Video credit** góc trên canvas (tách khỏi panel), lấy từ **`render_plan.toml` → `[intro_chrome]` `video_credit`** và truyền vào Remotion `defaultProps` (bundle không đọc TOML runtime — phải giữ hai nơi khớp chuỗi). Trending / ngày / headline **neo theo đỉnh** panel. Margin tối thiểu **~100px** so viền canvas cho credit và khối chữ trong panel. Typography: `z-index` cao hơn `OffthreadVideo` / panel.
+2. **Video layer dưới overlay:** bọc `OffthreadVideo` trong `overflow: "hidden"` + `object-fit: cover` và bias khung **lên trên** để mặt nằm phía trên vùng graphic: dùng `objectPosition: "center 15–25%"` và/hoặc `transform: translateY(-4% đến -8%) scale(1.04–1.08)` tùy footage; tinh chỉnh theo preview một frame tại điểm cắt intro.
+3. **Source credit / “VIDEO: …”:** kích thước **~một nửa** so với bar mặc định (vd font 18px thay 36px), **không** dùng pill nền đen — chỉ `text-shadow` để đọc được trên footage.
+4. **Font file local (vd. UTM Bebas):** lưu bản quyền trong **`fonts/`** ở root repo (cùng cấp thư mục `jobs/`). Trước `remotion studio` / `remotion render`, job Remotion chạy **`npm run sync-fonts`** (gọi `scripts/sync-fonts.mjs`) để copy `.ttf` / `.otf` / `.woff2` sang `remotion/public/fonts/` — `staticFile()` chỉ đọc từ `public/`.
+
+Chỉnh sửa trực tiếp tại `jobs/<job_id>/remotion/src/` (thường `composition.tsx` / layer intro) là đúng chỗ nhất; **không** cần chạy lại voice, transcript, hay semantic mapping — chỉ `npx remotion render` lại sau khi sửa layout.
 
 ## Quy tắc chất lượng
 

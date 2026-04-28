@@ -55,6 +55,7 @@ Dùng skill này khi user yêu cầu tạo, regenerate, preview, hoặc sản xu
    - Dùng `ausynclab-voice`.
    - Input: kịch bản voiceover từ creative plan.
    - Output: `jobs/<job_id>/source/voice.wav` hoặc `.mp3`, kèm `jobs/<job_id>/source/voice_selection.toml`.
+   - **Tùy chọn (theo yêu cầu user): tăng/giảm tốc sau TTS** — không gọi lại AusyncLab: dùng `speed-pydub` trong `skills/ausynclab_voice/scripts/ausynclab_voice.py` hoặc `voice_speed_pydub.py` (pydub `speedup`). Cài `skills/ausynclab_voice/scripts/requirements-voice-speed.txt` nếu môi trường thiếu `pydub` / trên Python 3.13+ thêm `audioop-lts`. Sau khi ghi đè `voice.wav`, **bắt buộc** đồng bộ độ dài intro với audio mới: cập nhật `source/render_plan.toml` + `remotion/src/Root.tsx`, copy `voice.wav` → `remotion/public/assets/`, chạy lại `$word-timestamps-extractor` nếu cần transcript khớp waveform mới, rồi các bước phụ thuộc transcript/render plan nếu có.
 
 4. **Transcript Timing**
    - Dùng `$word-timestamps-extractor`.
@@ -176,3 +177,4 @@ Trước khi chuyển sang bước tiếp theo, verify:
 - Ưu tiên cập nhật artifact stale nhỏ nhất hơn là regenerate mọi thứ.
 - Chỉ hỏi user về credentials thiếu, source media thiếu, hoặc quyết định sáng tạo không thể infer an toàn.
 - Đánh dấu mỗi stage hoàn thành trong `job.toml` qua `video-job-manager`.
+- Mọi bước liên quan text-on-video phải tuân thủ nguyên tắc ownership: text layer do Remotion render; không dùng FFmpeg/ImageMagick/Python để burn text.

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import os
 import sys
 import time
@@ -226,6 +227,17 @@ def write_voice_selection(path: Path, voice: dict[str, Any], args: argparse.Name
     )
 
 
+def speed_pydub(args: argparse.Namespace) -> None:
+    """Điều phối tới voice_speed_pydub.py (hậu xử lý WAV, không cần API)."""
+    mod_path = Path(__file__).resolve().parent / "voice_speed_pydub.py"
+    spec = importlib.util.spec_from_file_location("_voice_speed_pydub", mod_path)
+    if spec is None or spec.loader is None:
+        die("internal error: cannot load voice_speed_pydub.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.run(args)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
@@ -264,6 +276,25 @@ def build_parser() -> argparse.ArgumentParser:
     synth_parser.add_argument("--output-audio", type=Path, default=Path("source/voice.wav"))
     synth_parser.add_argument("--output", type=Path, default=Path("source/voice_selection.toml"))
     synth_parser.set_defaults(func=synthesize)
+
+    speed_parser = sub.add_parser(
+        "speed-pydub",
+        help="Hậu xử lý WAV: tăng/giảm tốc pydub speedup (khi user yêu cầu sau TTS).",
+    )
+    speed_parser.add_argument("--input", type=Path, required=True, help="WAV đầu vào (vd source/voice.wav)")
+    g = speed_parser.add_mutually_exclusive_group(required=True)
+    g.add_argument("--output", type=Path, help="WAV đầu ra")
+    g.add_argument("--in-place", action="store_true", help="Ghi đè --input")
+    speed_parser.add_argument("--playback-speed", type=float, default=1.12, help=">1 = nhanh hơn (mặc định 1.12)")
+    speed_parser.add_argument("--chunk-size", type=int, default=120)
+    speed_parser.add_argument("--crossfade", type=int, default=12)
+    speed_parser.add_argument(
+        "--update-voice-selection",
+        type=Path,
+        metavar="PATH",
+        help="Cập nhật duration_seconds + reason trong voice_selection.toml",
+    )
+    speed_parser.set_defaults(func=speed_pydub)
     return parser
 
 

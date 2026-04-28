@@ -12,9 +12,15 @@ import sys
 import time
 import urllib.error
 import urllib.parse
+import ssl
 import urllib.request
 from pathlib import Path
 from typing import Any
+
+try:
+    import certifi
+except ImportError:  # pragma: no cover
+    certifi = None
 
 try:
     import tomllib
@@ -152,15 +158,33 @@ def upsert_env_file(path: str | Path, updates: dict[str, str]) -> None:
     env_path.write_text("\n".join(output).rstrip() + "\n", encoding="utf-8")
 
 
+def _ssl_context() -> ssl.SSLContext | None:
+    if certifi is None:
+        return None
+    return ssl.create_default_context(cafile=certifi.where())
+
+
+# AusyncLab / Cloudflare từ chối urllib mặc định (Error 1010) nếu thiếu UA trình duyệt.
+_HTTP_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
+
+
 def http_json(url: str, *, method: str = "GET", headers: dict[str, str] | None = None, body: Any = None, timeout: int = 60) -> dict[str, Any]:
     data = None
     request_headers = dict(headers or {})
+    request_headers.setdefault("User-Agent", _HTTP_UA)
     if body is not None:
         data = json.dumps(body).encode("utf-8")
         request_headers.setdefault("Content-Type", "application/json")
     req = urllib.request.Request(url, data=data, method=method, headers=request_headers)
+    ctx = _ssl_context()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        kw: dict[str, Any] = {"timeout": timeout}
+        if ctx is not None:
+            kw["context"] = ctx
+        with urllib.request.urlopen(req, **kw) as resp:
             raw = resp.read().decode("utf-8")
             return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as exc:
@@ -171,11 +195,17 @@ def http_json(url: str, *, method: str = "GET", headers: dict[str, str] | None =
 
 
 def download_file(url: str, output_path: str | Path, *, headers: dict[str, str] | None = None, timeout: int = 120) -> Path:
-    req = urllib.request.Request(url, headers=headers or {})
+    h = dict(headers or {})
+    h.setdefault("User-Agent", _HTTP_UA)
+    req = urllib.request.Request(url, headers=h)
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    ctx = _ssl_context()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        kw: dict[str, Any] = {"timeout": timeout}
+        if ctx is not None:
+            kw["context"] = ctx
+        with urllib.request.urlopen(req, **kw) as resp:
             path.write_bytes(resp.read())
     except urllib.error.URLError as exc:
         die(f"download failed for {url}: {exc}")
