@@ -55,11 +55,13 @@ This index is content-addressed (SHA-256), so re-running it on the same files is
 - `$ausynclab-voice`: Work with AusyncLab voices and generate narration audio; optional pydub `speed-pydub` / `voice_speed_pydub.py` when the user asks to change narration speed after TTS without calling the API again.
 - `$fal-image-generator`: Synthesize AI images via fal.ai (default `fal-ai/nano-banana`) from prompts or scene_intents, with optional reference images for character lock; saves into `jobs/<id>/input/raw_assets/images/ai_generated/`.
 - `$overlay-subject-placement`: Analyze a frame with non-Gemini vision LLM and recommend safe overlay placement that avoids covering subjects and respects hard 9:16 unsafe padding.
+- `$socialkit-api`: Manage SocialKit APIs through the bundled Python client for transcripts, summaries, stats, comments, search, channel stats, video listing, and YouTube downloads; do not call SocialKit with curl.
 - `$video-downloader`: Download TikTok videos, slideshow images, or audio through TikWM into `raw_assets/` or `jobs/<id>/input/raw_assets/`.
 - `$word-timestamps-extractor`: Extract narration transcript with sentence and word timestamps.
 - `$remotion-best-practices`: Official Remotion skill installed from `remotion-dev/skills`; use for all Remotion code and project work.
 - `$semantic-asset-mapper`: Match transcript or scene intents to indexed image and video assets.
 - `$shot-coverage-planner`: Resolve coverage shortage and asset repetition in baseline mappings via cutaway, slowdown, hold + Ken Burns decisions.
+- `$theanh28-template`: Instantiate the reusable Theanh28-style Remotion template from a source clip, intro voice, headline, and credit.
 - `$video-creative-planner`: Build a production-ready creative plan, script, scene intents, and asset requirements.
 - `$video-design-spec-builder`: Build reusable Video Design Specifications from source videos.
 - `$video-job-manager`: Create and manage isolated video production jobs and canonical paths.

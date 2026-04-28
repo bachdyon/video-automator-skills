@@ -60,6 +60,7 @@ Desktop.ini
 # --- Pipeline runtime ---
 jobs/
 .asset_index/
+templates/
 
 # --- raw_assets pool: track folder layout, ignore large media files ---
 raw_assets/*

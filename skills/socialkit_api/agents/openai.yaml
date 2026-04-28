@@ -1,0 +1,7 @@
+interface:
+  display_name: "SocialKit API"
+  short_description: "Call SocialKit APIs from Python"
+  default_prompt: "Use $socialkit-api to call SocialKit APIs from Python and save the JSON result."
+
+policy:
+  allow_implicit_invocation: true

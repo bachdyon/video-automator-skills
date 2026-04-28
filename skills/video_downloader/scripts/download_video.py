@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
-from pipeline_utils import die, download_file, media_metadata, write_toml_document  # noqa: E402
+from pipeline_utils import _ssl_context, die, download_file, media_metadata, write_toml_document  # noqa: E402
 
 
 TIKWM_API = "https://www.tikwm.com/api/"
@@ -47,7 +47,11 @@ def post_form_json(url: str, fields: dict[str, Any], timeout: int = 90) -> dict[
     data = urllib.parse.urlencode(fields).encode("utf-8")
     req = urllib.request.Request(url, data=data, method="POST", headers=DEFAULT_HEADERS)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        context = _ssl_context()
+        kwargs: dict[str, Any] = {"timeout": timeout}
+        if context is not None:
+            kwargs["context"] = context
+        with urllib.request.urlopen(req, **kwargs) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
