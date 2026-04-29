@@ -100,6 +100,25 @@ def instantiate(args: argparse.Namespace) -> None:
     copy_if_different(intro_voice, canonical_voice)
     copy_if_different(canonical_source, source_asset)
     copy_if_different(canonical_voice, voice_asset)
+    music_path = ""
+    music_for_plan = ""
+    music_intro_volume = args.background_music_intro_volume or float(defaults["background_music_intro_volume"])
+    music_source_volume = (
+        args.background_music_source_volume
+        or args.background_music_volume
+        or float(defaults["background_music_source_volume"])
+    )
+    if args.background_music:
+        if not args.background_music.exists():
+            die(f"background music not found: {args.background_music}")
+        music_ext = args.background_music.suffix or ".mp3"
+        canonical_music = job_dir / "input" / "audio" / f"background_music{music_ext}"
+        music_asset = job_dir / "remotion" / "public" / "assets" / f"background_music{music_ext}"
+        canonical_music.parent.mkdir(parents=True, exist_ok=True)
+        copy_if_different(args.background_music, canonical_music)
+        copy_if_different(canonical_music, music_asset)
+        music_path = f"assets/background_music{music_ext}"
+        music_for_plan = rel(canonical_music, job_dir)
 
     source_meta = media_metadata(canonical_source)
     voice_meta = media_metadata(canonical_voice)
@@ -144,6 +163,9 @@ def instantiate(args: argparse.Namespace) -> None:
         "sourceDurationFrames": frames(source_seconds, fps),
         "sourceVideo": f"assets/source{source_ext}",
         "introVoice": f"assets/voice{voice_ext}",
+        "backgroundMusic": music_path,
+        "backgroundMusicIntroVolume": music_intro_volume,
+        "backgroundMusicSourceVolume": music_source_volume,
         "mainHeadline": args.main_headline,
         "videoCredit": video_credit,
         "dateStamp": date_stamp,
@@ -209,7 +231,16 @@ def instantiate(args: argparse.Namespace) -> None:
             },
         ),
         ("audio.voice", {"file_path": voice_for_plan, "start": 0.0, "gain_db": 0.0, "duck_source_under_intro": True}),
-        ("audio.music", {"file_path": "", "start": 0.0, "gain_db": -99.0, "duck_under_voice": False}),
+        (
+            "audio.music",
+            {
+                "file_path": music_for_plan,
+                "start": 0.0,
+                "gain_db": -18.0 if music_for_plan else -99.0,
+                "duck_under_voice": True if music_for_plan else False,
+                "loop": True if music_for_plan else False,
+            },
+        ),
         (
             "clips",
             [
@@ -331,7 +362,16 @@ def instantiate(args: argparse.Namespace) -> None:
         job_dir / "source" / "template_params.toml",
         [
             ("template", {"id": config["template"]["id"], "version": config["template"]["version"], "contract_path": "templates/theanh28/template.toml"}),
-            ("inputs", {"source_clip": source_clip_for_plan, "intro_voice": voice_for_plan, "main_headline": args.main_headline, "intro_script": args.intro_script}),
+            (
+                "inputs",
+                {
+                    "source_clip": source_clip_for_plan,
+                    "intro_voice": voice_for_plan,
+                    "background_music": music_for_plan,
+                    "main_headline": args.main_headline,
+                    "intro_script": args.intro_script,
+                },
+            ),
             ("props", props),
         ],
     )
@@ -347,6 +387,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--main-headline", required=True)
     parser.add_argument("--intro-script", default="")
     parser.add_argument("--video-credit", default="")
+    parser.add_argument("--background-music", type=Path)
+    parser.add_argument("--background-music-volume", type=float, default=0.0, help="Backward-compatible alias for --background-music-source-volume.")
+    parser.add_argument("--background-music-intro-volume", type=float, default=0.0)
+    parser.add_argument("--background-music-source-volume", type=float, default=0.0)
     parser.add_argument("--title", default="Theanh28 template video")
     parser.add_argument("--language", default="vi")
     parser.add_argument("--platform", default="tiktok")

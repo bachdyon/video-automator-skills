@@ -34,6 +34,9 @@ Optional style knobs:
 - `brand_label` default `TRENDING`
 - `logo_path` path to a brand logo image; when provided it replaces the text brand lockup.
 - `overlay_color` default `rgba(4, 102, 89, 0.9)`
+- `background_music`: optional audio file to loop under the render.
+- `background_music_intro_volume` default `0.6`; music starts at this level while AI voice is speaking.
+- `background_music_source_volume` default `0.9`; music ramps to this after the intro.
 - `headline_font_scale` default `1.0`
 - `intro_object_position` default `center 18%`
 - `intro_transform` default `translateY(-5%) scale(1.06)`
@@ -53,7 +56,10 @@ python3 skills/theanh28-template/scripts/instantiate.py \
   --main-headline "..." \
   --intro-script "..." \
   --video-credit "VIDEO: ..." \
-  --logo-path path/to/logo.png
+  --logo-path path/to/logo.png \
+  --background-music path/to/music.mp3 \
+  --background-music-intro-volume 0.6 \
+  --background-music-source-volume 0.9
 ```
 
 5. Render from `jobs/<job_id>/remotion`:
