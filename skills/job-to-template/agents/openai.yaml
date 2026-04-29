@@ -1,0 +1,4 @@
+interface:
+  display_name: "Job to Template"
+  short_description: "Turn jobs into reusable templates."
+  default_prompt: "Convert this finished Remotion job into a reusable template with a matching project skill, parameterized props, portability audit, and render verification."

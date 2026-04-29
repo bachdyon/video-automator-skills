@@ -54,6 +54,7 @@ This index is content-addressed (SHA-256), so re-running it on the same files is
 - `$audio-deduplicate`: Remove consecutive repeated speech from WAV or MP3 files using Whisper timestamps and export a cleaned audio file.
 - `$ausynclab-voice`: Work with AusyncLab voices and generate narration audio; optional pydub `speed-pydub` / `voice_speed_pydub.py` when the user asks to change narration speed after TTS without calling the API again.
 - `$fal-image-generator`: Synthesize AI images via fal.ai (default `fal-ai/nano-banana`) from prompts or scene_intents, with optional reference images for character lock; saves into `jobs/<id>/input/raw_assets/images/ai_generated/`.
+- `$job-to-template`: Convert a finished Remotion video job into a reusable template directory and matching project skill, with portability audit and render validation.
 - `$overlay-subject-placement`: Analyze a frame with non-Gemini vision LLM and recommend safe overlay placement that avoids covering subjects and respects hard 9:16 unsafe padding.
 - `$socialkit-api`: Manage SocialKit APIs through the bundled Python client for transcripts, summaries, stats, comments, search, channel stats, video listing, and YouTube downloads; do not call SocialKit with curl.
 - `$video-downloader`: Download TikTok videos, slideshow images, or audio through TikWM into `raw_assets/` or `jobs/<id>/input/raw_assets/`.
