@@ -56,12 +56,14 @@ This index is content-addressed (SHA-256), so re-running it on the same files is
 - `$fal-image-generator`: Synthesize AI images via fal.ai (default `fal-ai/nano-banana`) from prompts or scene_intents, with optional reference images for character lock; saves into `jobs/<id>/input/raw_assets/images/ai_generated/`.
 - `$job-to-template`: Convert a finished Remotion video job into a reusable template directory and matching project skill, with portability audit and render validation.
 - `$overlay-subject-placement`: Analyze a frame with non-Gemini vision LLM and recommend safe overlay placement that avoids covering subjects and respects hard 9:16 unsafe padding.
+- `$podcast-karaoke-frame-template`: Instantiate the Podcast Karaoke Rounded Frame render-style template for jobs that already have a render plan, word-level transcript, and visual timeline; semantic mapping stays upstream and job-specific.
 - `$socialkit-api`: Manage SocialKit APIs through the bundled Python client for transcripts, summaries, stats, comments, search, channel stats, video listing, and YouTube downloads; do not call SocialKit with curl.
 - `$video-downloader`: Download TikTok videos, slideshow images, or audio through TikWM into `raw_assets/` or `jobs/<id>/input/raw_assets/`.
 - `$word-timestamps-extractor`: Extract narration transcript with sentence and word timestamps.
 - `$remotion-best-practices`: Official Remotion skill installed from `remotion-dev/skills`; use for all Remotion code and project work.
 - `$semantic-asset-mapper`: Match transcript or scene intents to indexed image and video assets.
 - `$shot-coverage-planner`: Resolve coverage shortage and asset repetition in baseline mappings via cutaway, slowdown, hold + Ken Burns decisions.
+- `$subtitle-screen-splitter`: Split subtitle text or word-level transcripts into screen-sized pages, breaking after punctuation and before capitalized sentence starts.
 - `$theanh28-template`: Instantiate the reusable Theanh28-style Remotion template from a source clip, intro voice, headline, and credit.
 - `$video-creative-planner`: Build a production-ready creative plan, script, scene intents, and asset requirements.
 - `$video-design-spec-builder`: Build reusable Video Design Specifications from source videos.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Subtitle Screen Splitter"
+  short_description: "Tách subtitle thành từng màn ngắn"
+  default_prompt: "Tách subtitle thành các màn ngắn, ưu tiên ngắt sau dấu câu và trước chữ viết hoa bắt đầu câu mới."
