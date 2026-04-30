@@ -21,7 +21,6 @@ from typing import Any
 
 BASE_URL = "https://api.socialkit.dev"
 ENV_KEY = "SOCIALKIT_API_KEY"
-LEGACY_ENV_KEY = "SOCIALKIT_ACCESS_KEY"
 
 
 @dataclass(frozen=True)
@@ -163,12 +162,7 @@ class SocialKitClient:
     @classmethod
     def from_env_file(cls, env_file: str | os.PathLike[str] = ".env", **kwargs: Any) -> "SocialKitClient":
         values = load_env_file(env_file)
-        access_key = (
-            os.environ.get(ENV_KEY)
-            or values.get(ENV_KEY)
-            or os.environ.get(LEGACY_ENV_KEY)
-            or values.get(LEGACY_ENV_KEY)
-        )
+        access_key = os.environ.get(ENV_KEY) or values.get(ENV_KEY)
         if not access_key:
             raise ValueError(f"{ENV_KEY} is missing from environment or {env_file}")
         return cls(access_key, **kwargs)
@@ -303,12 +297,7 @@ def command_call(args: argparse.Namespace) -> int:
     access_key = args.access_key
     if not access_key:
         env_values = load_env_file(args.env_file)
-        access_key = (
-            os.environ.get(ENV_KEY)
-            or env_values.get(ENV_KEY)
-            or os.environ.get(LEGACY_ENV_KEY)
-            or env_values.get(LEGACY_ENV_KEY)
-        )
+        access_key = os.environ.get(ENV_KEY) or env_values.get(ENV_KEY)
     if not access_key:
         raise SystemExit(f"{ENV_KEY} is missing from environment or {args.env_file}")
 
