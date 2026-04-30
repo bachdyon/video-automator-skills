@@ -9,7 +9,7 @@ description: Làm việc với SocialKit API bằng Python để lấy transcrip
 
 - Dùng Python cho mọi request SocialKit. Không dùng `curl` để gọi API SocialKit.
 - Dùng script `skills/socialkit_api/scripts/socialkit_client.py` trước khi tự viết code gọi API.
-- Không in hoặc ghi lộ `SOCIALKIT_ACCESS_KEY`.
+- Không in hoặc ghi lộ `SOCIALKIT_API_KEY`.
 - Mặc định đọc key từ `.env` ở repo root. Chỉ dùng env file khác khi user yêu cầu rõ.
 - Ưu tiên auth bằng header `x-access-key`; không đưa key vào URL/log.
 - Khi response có `success: false`, báo lỗi theo `message` và HTTP status nếu có.
@@ -39,7 +39,7 @@ Khi cần tham số/endpoint nhanh, đọc `references/api_reference.md`.
 `.env` repo-root nên có:
 
 ```text
-SOCIALKIT_ACCESS_KEY=...
+SOCIALKIT_API_KEY=...
 ```
 
 Không commit key thật. Nếu thiếu key, dừng lại và yêu cầu user thêm key vào `.env` hoặc truyền env file phù hợp.
@@ -104,7 +104,7 @@ data = client.request("youtube.stats", url="https://youtube.com/watch?v=dQw4w9Wg
 ## Quy trình làm việc
 
 1. Xác định platform và operation từ user request.
-2. Đọc `.env`; xác nhận `SOCIALKIT_ACCESS_KEY` tồn tại mà không in key.
+2. Đọc `.env`; xác nhận `SOCIALKIT_API_KEY` tồn tại mà không in key.
 3. Chạy `endpoints` nếu chưa chắc operation key.
 4. Chạy `call <operation>` với `--param` / `--json-param`.
 5. Ghi output JSON vào `source/` hoặc `jobs/<job_id>/source/` nếu request thuộc video job.

@@ -6,7 +6,7 @@ Base URL: `https://api.socialkit.dev`
 
 Auth:
 
-- Prefer header: `x-access-key: <SOCIALKIT_ACCESS_KEY>`
+- Prefer header: `x-access-key: <SOCIALKIT_API_KEY>`
 - Docs also allow `access_key` as GET/POST parameter, but do not use that by default because URLs/logs can leak.
 
 Common optional params:
