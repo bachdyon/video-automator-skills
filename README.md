@@ -14,11 +14,21 @@ Tài liệu đầy đủ: **https://vas.bachdyon.com/**
 - `$semantic-asset-mapper` — map transcript hoặc scene intents vào asset đã index để tạo timeline mapping. [Chi tiết](https://vas.bachdyon.com/skills/semantic-asset-mapper)
 - `$shot-coverage-planner` — xử lý thiếu coverage và lặp asset bằng cutaway, slowdown, hold + Ken Burns. [Chi tiết](https://vas.bachdyon.com/skills/shot-coverage-planner)
 - `$fal-image-generator` — sinh ảnh AI bằng fal.ai từ prompt/scene intents, hỗ trợ reference để giữ nhân vật. [Chi tiết](https://vas.bachdyon.com/skills/fal-image-generator)
-- `$ausynclab-voice` — chọn voice và sinh narration audio bằng AusyncLab. [Chi tiết](https://vas.bachdyon.com/skills/ausynclab-voice)
+- `$ausynclab-voice` — chọn voice và sinh narration audio bằng AusyncLab khi có `AUSYNCLAB_API_KEY`; fallback sang `$free-tts` khi thiếu key. [Chi tiết](https://vas.bachdyon.com/skills/ausynclab-voice)
+- `$free-tts` — tạo giọng đọc miễn phí/local bằng VieNeu-TTS, hỗ trợ preset voice, voice clone, và registry `.shared`. [Chi tiết](https://vas.bachdyon.com/skills/free-tts)
 - `$word-timestamps-extractor` — trích xuất transcript narration có timestamp cấp câu và cấp từ. [Chi tiết](https://vas.bachdyon.com/skills/word-timestamps-extractor)
 - `$audio-deduplicate` — bỏ đoạn nói trùng lặp/restart/vấp trong file ghi âm. [Chi tiết](https://vas.bachdyon.com/skills/audio-deduplicate)
+- `$video-audio-extractor` — tách audio track từ video sang WAV/MP3 để transcribe, deduplicate hoặc dùng làm nhạc nền. [Chi tiết](https://vas.bachdyon.com/skills/video-audio-extractor)
+- `$video-downloader` — tải TikTok video/slideshow/audio qua TikWM vào `raw_assets/` hoặc `jobs/<id>/input/raw_assets/`. [Chi tiết](https://vas.bachdyon.com/skills/video-downloader)
+- `$socialkit-api` — gọi SocialKit API bằng Python để lấy transcript, summary, stats, comments, search, channel stats và YouTube download. [Chi tiết](https://vas.bachdyon.com/skills/socialkit-api)
+- `$subtitle-screen-splitter` — chia subtitle/transcript thành các page ngắn vừa màn hình cho karaoke captions hoặc render plan. [Chi tiết](https://vas.bachdyon.com/skills/subtitle-screen-splitter)
 - `$video-render-plan-builder` — chuyển VDS, creative plan, transcript và semantic mapping thành render plan TOML. [Chi tiết](https://vas.bachdyon.com/skills/video-render-plan-builder)
 - `$video-renderer` — render video cuối từ render plan, audio, asset, subtitle và style rules. [Chi tiết](https://vas.bachdyon.com/skills/video-renderer)
+- `$video-quality-auditor` — audit Remotion source/render plan, ưu tiên overlay readability và safe-area, rồi xuất báo cáo TOML/HTML. [Chi tiết](https://vas.bachdyon.com/skills/video-quality-auditor)
+- `$overlay-subject-placement` — phân tích frame bằng vision LLM để đề xuất vị trí overlay tránh che chủ thể và vùng unsafe. [Chi tiết](https://vas.bachdyon.com/skills/overlay-subject-placement)
+- `$podcast-karaoke-frame-template` — instantiate template Podcast Karaoke Rounded Frame cho job đã có render plan, transcript và visual timeline. [Chi tiết](https://vas.bachdyon.com/skills/podcast-karaoke-frame-template)
+- `$theanh28-template` — instantiate template Theanh28-style cho short video tiếng Việt với AI news intro overlay và source clip playback. [Chi tiết](https://vas.bachdyon.com/skills/theanh28-template)
+- `$job-to-template` — chuyển job Remotion đã hoàn thiện thành template và project skill tái sử dụng. [Chi tiết](https://vas.bachdyon.com/skills/job-to-template)
 
 Official third-party skill:
 
