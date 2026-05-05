@@ -26,8 +26,6 @@ Tài liệu đầy đủ: **https://vas.bachdyon.com/**
 - `$video-renderer` — render video cuối từ render plan, audio, asset, subtitle và style rules. [Chi tiết](https://vas.bachdyon.com/skills/video-renderer)
 - `$video-quality-auditor` — audit Remotion source/render plan, ưu tiên overlay readability và safe-area, rồi xuất báo cáo TOML/HTML. [Chi tiết](https://vas.bachdyon.com/skills/video-quality-auditor)
 - `$overlay-subject-placement` — phân tích frame bằng vision LLM để đề xuất vị trí overlay tránh che chủ thể và vùng unsafe. [Chi tiết](https://vas.bachdyon.com/skills/overlay-subject-placement)
-- `$podcast-karaoke-frame-template` — instantiate template Podcast Karaoke Rounded Frame cho job đã có render plan, transcript và visual timeline. [Chi tiết](https://vas.bachdyon.com/skills/podcast-karaoke-frame-template)
-- `$theanh28-template` — instantiate template Theanh28-style cho short video tiếng Việt với AI news intro overlay và source clip playback. [Chi tiết](https://vas.bachdyon.com/skills/theanh28-template)
 - `$job-to-template` — chuyển job Remotion đã hoàn thiện thành template và project skill tái sử dụng. [Chi tiết](https://vas.bachdyon.com/skills/job-to-template)
 
 Official third-party skill:
