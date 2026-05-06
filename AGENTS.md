@@ -70,6 +70,7 @@ This index is content-addressed (SHA-256), so re-running it on the same files is
 - `$semantic-asset-mapper`: Match transcript or scene intents to indexed image and video assets.
 - `$shot-coverage-planner`: Resolve coverage shortage and asset repetition in baseline mappings via cutaway, slowdown, hold + Ken Burns decisions.
 - `$subtitle-screen-splitter`: Split subtitle text or word-level transcripts into screen-sized pages, breaking after punctuation and before capitalized sentence starts.
+- `$subtitle_punch_tag_shortform`: Short-form captions with word-synced normal + PUNCH lines (~7–8 word chunks, semantic punch selection, no dropped words, no mid-token line breaks, two-layer punch text for shadow vs clean fill); see `skills/subtitle_punch_tag_shortform/SKILL.md`.
 - `$theanh28-template`: Instantiate the reusable Theanh28-style Remotion template from a source clip, intro voice, headline, and credit.
 - `$video-creative-planner`: Build a production-ready creative plan, script, scene intents, and asset requirements.
 - `$video-design-spec-builder`: Build reusable Video Design Specifications from source videos.
