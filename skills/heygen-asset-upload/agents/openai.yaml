@@ -1,0 +1,7 @@
+interface:
+  display_name: "HeyGen Asset Upload"
+  short_description: "Upload reusable files to HeyGen"
+  default_prompt: "Use $heygen-asset-upload to upload these local files to HeyGen and return their asset IDs."
+
+policy:
+  allow_implicit_invocation: true

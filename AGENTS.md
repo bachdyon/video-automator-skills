@@ -57,6 +57,8 @@ This index is content-addressed (SHA-256), so re-running it on the same files is
 - `$create-video-seedance-2-0`: Create videos with KIE.AI Bytedance Seedance 2.0 Fast from text, first/last frames, or multimodal references; supports task polling and downloading generated result URLs.
 - `$fal-image-generator`: Synthesize AI images via fal.ai (default `fal-ai/nano-banana`) from prompts or scene_intents, with optional reference images for character lock; saves into `jobs/<id>/input/raw_assets/images/ai_generated/`.
 - `$free-tts`: Generate free/local Vietnamese narration with VieNeu-TTS when `.env` has no `AUSYNCLAB_API_KEY`, or when the user explicitly asks for free/local/VieNeu TTS.
+- `$heygen-asset-upload`: Upload images, videos, audio, or PDFs to HeyGen and return reusable asset IDs.
+- `$heygen-photo-avatar-video`: Create HeyGen image-to-video/photo-avatar talking-head videos from a person's image plus custom audio; use for video nhân hiệu.
 - `$job-to-template`: Convert a finished Remotion video job into a reusable template directory and matching project skill, with portability audit and render validation.
 - `$overlay-subject-placement`: Analyze a frame with non-Gemini vision LLM and recommend safe overlay placement that avoids covering subjects and respects hard 9:16 unsafe padding.
 - `$podcast-karaoke-frame-template`: Instantiate the Podcast Karaoke Rounded Frame render-style template for jobs that already have a render plan, word-level transcript, and visual timeline; semantic mapping stays upstream and job-specific.

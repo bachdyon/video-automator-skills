@@ -18,6 +18,7 @@ from urllib import error, parse, request
 API_BASE = "https://api.kie.ai"
 UPLOAD_BASE = "https://kieai.redpandaai.co"
 MODEL = "bytedance/seedance-2-fast"
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
 
 def load_env(path: Path) -> dict[str, str]:
@@ -91,6 +92,8 @@ def multipart_upload(path: Path, key: str, upload_path: str) -> str:
         headers={
             "Authorization": f"Bearer {key}",
             "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
         },
         method="POST",
     )
@@ -101,7 +104,8 @@ def multipart_upload(path: Path, key: str, upload_path: str) -> str:
         detail = exc.read().decode("utf-8", errors="replace")
         raise SystemExit(f"Upload failed for {path}: HTTP {exc.code}: {detail}") from exc
 
-    file_url = (data.get("data") or {}).get("fileUrl")
+    file_data = data.get("data") or {}
+    file_url = file_data.get("fileUrl") or file_data.get("downloadUrl")
     if not file_url:
         raise SystemExit(f"Upload response missing data.fileUrl: {json.dumps(data, ensure_ascii=False)}")
     return file_url

@@ -1,0 +1,7 @@
+interface:
+  display_name: "HeyGen Photo Avatar Video"
+  short_description: "Create personal brand talking videos"
+  default_prompt: "Use $heygen-photo-avatar-video to create a video nhân hiệu from this image and audio."
+
+policy:
+  allow_implicit_invocation: true
