@@ -1,0 +1,7 @@
+interface:
+  display_name: "Create Video Seedance 2.0"
+  short_description: "Generate Seedance 2.0 Fast videos via KIE"
+  default_prompt: "Use $create-video-seedance-2-0 to generate a short vertical video from this prompt and download the result."
+
+policy:
+  allow_implicit_invocation: true

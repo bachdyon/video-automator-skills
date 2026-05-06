@@ -1,0 +1,7 @@
+interface:
+  display_name: "Create/Edit Image GPT Image 2"
+  short_description: "Create or edit images via KIE GPT Image 2"
+  default_prompt: "Use $create-edit-image-gpt-image-2 to create or edit an image from this prompt and optional reference images."
+
+policy:
+  allow_implicit_invocation: true

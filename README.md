@@ -14,6 +14,8 @@ Tài liệu đầy đủ: **https://vas.bachdyon.com/**
 - `$semantic-asset-mapper` — map transcript hoặc scene intents vào asset đã index để tạo timeline mapping. [Chi tiết](https://vas.bachdyon.com/skills/semantic-asset-mapper)
 - `$shot-coverage-planner` — xử lý thiếu coverage và lặp asset bằng cutaway, slowdown, hold + Ken Burns. [Chi tiết](https://vas.bachdyon.com/skills/shot-coverage-planner)
 - `$fal-image-generator` — sinh ảnh AI bằng fal.ai từ prompt/scene intents, hỗ trợ reference để giữ nhân vật. [Chi tiết](https://vas.bachdyon.com/skills/fal-image-generator)
+- `$create-edit-image-gpt-image-2` — tạo hoặc edit ảnh qua KIE GPT Image 2 từ text và ảnh tham chiếu. [Chi tiết](https://vas.bachdyon.com/skills/create-edit-image-gpt-image-2)
+- `$create-video-seedance-2-0` — tạo video Seedance 2.0 Fast qua KIE từ text, frame đầu/cuối, hoặc reference. [Chi tiết](https://vas.bachdyon.com/skills/create-video-seedance-2-0)
 - `$ausynclab-voice` — chọn voice và sinh narration audio bằng AusyncLab khi có `AUSYNCLAB_API_KEY`; fallback sang `$free-tts` khi thiếu key. [Chi tiết](https://vas.bachdyon.com/skills/ausynclab-voice)
 - `$free-tts` — tạo giọng đọc miễn phí/local bằng VieNeu-TTS, hỗ trợ preset voice, voice clone, và registry `.shared`. [Chi tiết](https://vas.bachdyon.com/skills/free-tts)
 - `$word-timestamps-extractor` — trích xuất transcript narration có timestamp cấp câu và cấp từ. [Chi tiết](https://vas.bachdyon.com/skills/word-timestamps-extractor)

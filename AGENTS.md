@@ -53,11 +53,14 @@ This index is content-addressed (SHA-256), so re-running it on the same files is
 - `$asset-semantic-extractor`: Analyze image or video assets and produce a TOML semantic index for video assembly.
 - `$audio-deduplicate`: Remove consecutive repeated speech from WAV or MP3 files using Whisper timestamps and export a cleaned audio file.
 - `$ausynclab-voice`: Work with AusyncLab voices and generate narration audio; optional pydub `speed-pydub` / `voice_speed_pydub.py` when the user asks to change narration speed after TTS without calling the API again.
+- `$create-edit-image-gpt-image-2`: Create or edit images with KIE.AI GPT Image 2 from text prompts and optional reference images; supports task polling and downloading generated result URLs.
+- `$create-video-seedance-2-0`: Create videos with KIE.AI Bytedance Seedance 2.0 Fast from text, first/last frames, or multimodal references; supports task polling and downloading generated result URLs.
 - `$fal-image-generator`: Synthesize AI images via fal.ai (default `fal-ai/nano-banana`) from prompts or scene_intents, with optional reference images for character lock; saves into `jobs/<id>/input/raw_assets/images/ai_generated/`.
 - `$free-tts`: Generate free/local Vietnamese narration with VieNeu-TTS when `.env` has no `AUSYNCLAB_API_KEY`, or when the user explicitly asks for free/local/VieNeu TTS.
 - `$job-to-template`: Convert a finished Remotion video job into a reusable template directory and matching project skill, with portability audit and render validation.
 - `$overlay-subject-placement`: Analyze a frame with non-Gemini vision LLM and recommend safe overlay placement that avoids covering subjects and respects hard 9:16 unsafe padding.
 - `$podcast-karaoke-frame-template`: Instantiate the Podcast Karaoke Rounded Frame render-style template for jobs that already have a render plan, word-level transcript, and visual timeline; semantic mapping stays upstream and job-specific.
+- `$podcast-dong-phuong-template`: Instantiate the Podcast Đông Phương full-width podcast render-style template for jobs that already have a render plan, word-level transcript, and visual timeline.
 - `$socialkit-api`: Manage SocialKit APIs through the bundled Python client for transcripts, summaries, stats, comments, search, channel stats, video listing, and YouTube downloads; do not call SocialKit with curl.
 - `$video-downloader`: Download TikTok videos, slideshow images, or audio through TikWM into `raw_assets/` or `jobs/<id>/input/raw_assets/`.
 - `$word-timestamps-extractor`: Extract narration transcript with sentence and word timestamps.

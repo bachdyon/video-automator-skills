@@ -140,9 +140,6 @@ def synthesize(args: argparse.Namespace) -> None:
     voice_id = args.voice_id or env.get("AUSYNCLAB_VOICE_ID")
     if not voice_id:
         die("voice_id is required via --voice-id or AUSYNCLAB_VOICE_ID in .env")
-    callback_url = args.callback_url or os.environ.get("AUSYNCLAB_CALLBACK_URL") or env.get("AUSYNCLAB_CALLBACK_URL")
-    if not callback_url:
-        die("AusyncLab TTS requires --callback-url or AUSYNCLAB_CALLBACK_URL")
     text = read_text(args)
     payload = {
         "audio_name": args.audio_name,
@@ -152,6 +149,9 @@ def synthesize(args: argparse.Namespace) -> None:
         "model_name": args.model_name,
         "language": args.language,
     }
+    callback_url = args.callback_url or os.environ.get("AUSYNCLAB_CALLBACK_URL") or env.get("AUSYNCLAB_CALLBACK_URL")
+    if callback_url:
+        payload["callback_url"] = callback_url
     response = http_json(f"{SPEECH_BASE}/text-to-speech", method="POST", headers=headers(key), body=payload, timeout=120)
     result = response.get("result") or response
     audio_id = int(result.get("id") or result.get("audio_id") or 0)
