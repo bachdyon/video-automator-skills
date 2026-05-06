@@ -7,7 +7,7 @@ description: Short-form subtitle với dòng normal + PUNCH_TAG đồng bộ wor
 
 Skill mô tả **end-to-end** pipeline phụ đề short-form: **một dòng (hoặc nhiều dòng) “normal”** + **một cụm PUNCH** (to, đậm), đồng bộ **100%** với transcript có timestamp từng từ (`word_id`), không mất chữ, không nhân đôi từ giữa normal và punch.
 
-Tham chiếu triển khai mẫu: job `jobs/2026-05-06_004_style-caption-chest-zone/remotion/src/composition.tsx`.
+Tham chiếu triển khai mẫu: job `jobs/2026-05-06_004_personal_brand_no_broll/remotion/src/composition.tsx`.
 
 ---
 
