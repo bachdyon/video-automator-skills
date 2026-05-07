@@ -38,6 +38,7 @@ Desktop.ini
 # --- IDE / Editor ---
 .idea/
 .vscode/
+.cursor/mcp.json
 *.code-workspace
 *.swp
 *.swo
@@ -60,6 +61,7 @@ Desktop.ini
 # --- Pipeline runtime ---
 jobs/
 .asset_index/
+# Toàn bộ Remotion template chỉ dùng local — không push lên git
 templates/
 
 # --- raw_assets pool: track folder layout, ignore large media files ---

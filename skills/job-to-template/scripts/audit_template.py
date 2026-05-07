@@ -43,6 +43,24 @@ def iter_source_files(root: Path) -> list[Path]:
     return files
 
 
+def check_remotion_bundle_clean(template_dir: Path) -> None:
+    remotion = template_dir / "remotion"
+    if not remotion.is_dir():
+        return
+    forbidden_names = ["node_modules", "build", "output", "out", "dist", ".remotion"]
+    found: list[str] = []
+    for name in forbidden_names:
+        p = remotion / name
+        if p.exists():
+            found.append(str(p.relative_to(REPO_ROOT)))
+    if found:
+        fail(
+            "template remotion must not contain generated dirs (remove before commit): "
+            + ", ".join(found),
+        )
+    ok("template remotion has no node_modules/build/output/out bundle dirs")
+
+
 def check_no_forbidden_dirs(template_dir: Path) -> None:
     forbidden = ["node_modules", "output", "logs", ".git"]
     found = [name for name in forbidden if (template_dir / name).exists()]
@@ -137,6 +155,7 @@ def main() -> None:
         fail(f"missing template directory: {template_dir}")
 
     check_no_forbidden_dirs(template_dir)
+    check_remotion_bundle_clean(template_dir)
     check_contract(template_dir)
     check_props(template_dir)
     check_remotion_project(template_dir)

@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
-from pipeline_utils import die, env_value, guess_mime, media_metadata, write_toml_document
+from pipeline_utils import die, env_value, guess_mime, media_metadata, write_toml_document, _ssl_context
 
 
 OPENAI_TRANSCRIPTIONS_URL = "https://api.openai.com/v1/audio/transcriptions"
@@ -72,7 +72,11 @@ def transcribe(args: argparse.Namespace) -> dict[str, Any]:
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=args.timeout_seconds) as response:
+        urlopen_kw: dict[str, Any] = {"timeout": args.timeout_seconds}
+        ctx = _ssl_context()
+        if ctx is not None:
+            urlopen_kw["context"] = ctx
+        with urllib.request.urlopen(request, **urlopen_kw) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")

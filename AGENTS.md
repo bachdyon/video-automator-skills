@@ -56,14 +56,17 @@ This index is content-addressed (SHA-256), so re-running it on the same files is
 - `$create-edit-image-gpt-image-2`: Create or edit images with KIE.AI GPT Image 2 from text prompts and optional reference images; supports task polling and downloading generated result URLs.
 - `$create-video-seedance-2-0`: Create videos with KIE.AI Bytedance Seedance 2.0 Fast from text, first/last frames, or multimodal references; supports task polling and downloading generated result URLs.
 - `$fal-image-generator`: Synthesize AI images via fal.ai (default `fal-ai/nano-banana`) from prompts or scene_intents, with optional reference images for character lock; saves into `jobs/<id>/input/raw_assets/images/ai_generated/`.
+- `$filepost-file-upload`: Upload local files to FilePost permanent CDN URLs and list, get, or delete uploaded FilePost files via the bundled API client.
 - `$free-tts`: Generate free/local Vietnamese narration with VieNeu-TTS when `.env` has no `AUSYNCLAB_API_KEY`, or when the user explicitly asks for free/local/VieNeu TTS.
 - `$heygen-asset-upload`: Upload images, videos, audio, or PDFs to HeyGen and return reusable asset IDs.
 - `$heygen-photo-avatar-video`: Create HeyGen image-to-video/photo-avatar talking-head videos from a person's image plus custom audio; use for video nhân hiệu.
 - `$job-to-template`: Convert a finished Remotion video job into a reusable template directory and matching project skill, with portability audit and render validation.
+- `$personal-brand-mat-overlay-template`: Personal brand vertical — person vs trám beats, punch + infographic mat overlay; **must follow** `templates/personal-brand-mat-overlay/template.toml` `[rules]`.
 - `$overlay-subject-placement`: Analyze a frame with non-Gemini vision LLM and recommend safe overlay placement that avoids covering subjects and respects hard 9:16 unsafe padding.
 - `$podcast-karaoke-frame-template`: Instantiate the Podcast Karaoke Rounded Frame render-style template for jobs that already have a render plan, word-level transcript, and visual timeline; semantic mapping stays upstream and job-specific.
 - `$podcast-dong-phuong-template`: Instantiate the Podcast Đông Phương full-width podcast render-style template for jobs that already have a render plan, word-level transcript, and visual timeline.
 - `$socialkit-api`: Manage SocialKit APIs through the bundled Python client for transcripts, summaries, stats, comments, search, channel stats, video listing, and YouTube downloads; do not call SocialKit with curl.
+- `$zernio-upload-direct`: Upload local media files to Zernio `/v1/media/upload-direct` with Bearer API key auth and return temporary public URLs for inbox message attachments.
 - `$video-downloader`: Download TikTok videos, slideshow images, or audio through TikWM into `raw_assets/` or `jobs/<id>/input/raw_assets/`.
 - `$word-timestamps-extractor`: Extract narration transcript with sentence and word timestamps.
 - `$remotion-best-practices`: Official Remotion skill installed from `remotion-dev/skills`; use for all Remotion code and project work.
@@ -72,6 +75,7 @@ This index is content-addressed (SHA-256), so re-running it on the same files is
 - `$subtitle-screen-splitter`: Split subtitle text or word-level transcripts into screen-sized pages, breaking after punctuation and before capitalized sentence starts.
 - `$subtitle_punch_tag_shortform`: Short-form captions with word-synced normal + PUNCH lines (~7–8 word chunks, semantic punch selection, no dropped words, no mid-token line breaks, two-layer punch text for shadow vs clean fill); see `skills/subtitle_punch_tag_shortform/SKILL.md`.
 - `$theanh28-template`: Instantiate the reusable Theanh28-style Remotion template from a source clip, intro voice, headline, and credit.
+- `$video-compress-under-25mb`: Compress local videos under 25MB with H.264/AAC 2-pass encoding, preserving resolution/fps when possible, for upload limits such as Zernio upload-direct.
 - `$video-creative-planner`: Build a production-ready creative plan, script, scene intents, and asset requirements.
 - `$video-design-spec-builder`: Build reusable Video Design Specifications from source videos.
 - `$video-job-manager`: Create and manage isolated video production jobs and canonical paths.

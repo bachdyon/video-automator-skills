@@ -1,0 +1,4 @@
+interface:
+  display_name: "FilePost File Upload"
+  short_description: "List, get, upload, delete FilePost files"
+  default_prompt: "Use $filepost-file-upload to upload, list, get, or delete files through the FilePost API."

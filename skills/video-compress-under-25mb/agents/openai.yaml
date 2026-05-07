@@ -1,0 +1,4 @@
+interface:
+  display_name: "Video Compress <25MB"
+  short_description: "Compress videos below 25MB"
+  default_prompt: "Use $video-compress-under-25mb to compress a local video below 25MB while preserving resolution when possible."

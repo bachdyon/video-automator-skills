@@ -12,8 +12,11 @@ import sys
 import time
 import uuid
 from pathlib import Path
+from typing import Any
 from urllib import error, parse, request
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_shared"))
+from pipeline_utils import _ssl_context  # noqa: E402
 
 API_BASE = "https://api.heygen.com"
 MAX_SIZE_BYTES = 32 * 1024 * 1024
@@ -64,6 +67,14 @@ def validate_upload_file(path: Path) -> None:
         raise SystemExit(f"Unsupported file extension for HeyGen upload: {path.suffix}")
 
 
+def _urlopen(req: request.Request, timeout: int) -> Any:
+    kw: dict[str, Any] = {"timeout": timeout}
+    ctx = _ssl_context()
+    if ctx is not None:
+        kw["context"] = ctx
+    return request.urlopen(req, **kw)
+
+
 def request_json(method: str, url: str, key: str, payload: dict | None = None) -> dict:
     headers = {"X-Api-Key": key, "Accept": "application/json"}
     data = None
@@ -72,7 +83,7 @@ def request_json(method: str, url: str, key: str, payload: dict | None = None) -
         headers["Content-Type"] = "application/json"
     req = request.Request(url, data=data, headers=headers, method=method)
     try:
-        with request.urlopen(req, timeout=180) as resp:
+        with _urlopen(req, 180) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
@@ -107,7 +118,7 @@ def upload_asset(path: Path, key: str) -> dict:
         method="POST",
     )
     try:
-        with request.urlopen(req, timeout=180) as resp:
+        with _urlopen(req, 180) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
     except error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
@@ -222,7 +233,7 @@ def download_video(url: str, output_dir: Path, video_id: str) -> str:
     output_dir.mkdir(parents=True, exist_ok=True)
     out = output_dir / filename_from_url(url, f"heygen_video_{video_id}")
     req = request.Request(url, headers={"User-Agent": "video-agent-heygen/1.0"})
-    with request.urlopen(req, timeout=600) as resp:
+    with _urlopen(req, 600) as resp:
         out.write_bytes(resp.read())
     return str(out)
 

@@ -1,0 +1,27 @@
+---
+description: Thư mục template video không được chứa node_modules, build, output hay artefact bundler.
+globs: templates/**/*
+alwaysApply: false
+---
+
+# Template Remotion: không commit và không để sót thư mục sinh ra
+
+Áp dụng khi chỉnh bất kỳ file dưới `templates/`.
+
+## Bắt buộc
+
+- Trong **`templates/<id>/remotion/`** (và toàn bộ template nếu có thêm app con): **không** đưa vào repo và **không** để sót sau khi làm việc:
+  - `node_modules/`
+  - `build/` (webpack / Remotion bundle)
+  - `out/`, `output/` (xuất frame/video thử)
+  - `.remotion/`
+  - `dist/`
+- Sau `npm install` / render / studio **trên bản copy local**: trước khi commit hoặc coi template “sạch”, **xóa** các thư mục trên trong tree template; chỉ giữ nguồn, `public/`, `package.json`, `package-lock.json` (lock có thể giữ).
+
+## Khi copy template sang job
+
+- Dùng `rsync`/`copytree` với **loại trừ** `node_modules`, `build`, `output`, `out`, `.remotion`.
+
+## Kiểm tra
+
+- `python3 skills/job-to-template/scripts/audit_template.py --template-id <id> --template-skill <skill>` phải pass (script kiểm tra remotion không chứa các thư mục cấm).

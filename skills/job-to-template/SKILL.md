@@ -17,6 +17,10 @@ For any Remotion-specific work, first load `.agents/skills/remotion-best-practic
 scripts/ensure-remotion-skill.sh
 ```
 
+## Ràng buộc beat trám (thi hành)
+
+Mẫu đầy đủ ghi trong `templates/personal-brand-mat-overlay/template.toml` — mục **`[rules]`**, các khóa **`bat_buoc_*`**. Skill đi kèm: **`personal-brand-mat-overlay-template`**. Khi tạo thêm template có trám, nhúng cùng kiểu `[rules]` vào `template.toml` và nhắc trong skill sinh ra.
+
 ## Workflow
 
 1. Inspect the source job.
@@ -26,6 +30,7 @@ scripts/ensure-remotion-skill.sh
 2. Create `templates/<template_id>/`.
    - Copy only the Remotion project files needed to render.
    - Exclude `node_modules`, `.git`, `output`, `logs`, generated stills, large job-only assets, and downloaded source media.
+   - Under `remotion/`, **never** leave `node_modules`, `build`, `out`, `output`, `.remotion`, or `dist` in the template tree—add `remotion/.gitignore` for those names and delete them after local `npm install` / render checks.
    - Add `template.toml` with stable defaults, render dimensions, composition id, style tokens, input contract, and rules.
    - Add `reference/vds.md` only when the visual design needs more detail than `template.toml`.
 
@@ -88,8 +93,10 @@ ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_n
 
 Before final response, confirm:
 
+- **Trám:** nếu template có beat trám, `template.toml` có `[rules]` tương đương mẫu `personal-brand-mat-overlay` (không để trống các ràng buộc hai kiểu timing, meme, render xác nhận).
+
 - A future user can instantiate the template by passing only source assets and style parameters.
-- The template has no copied `node_modules`, output videos, logs, or job-only downloaded media.
+- The template has no copied `node_modules`, output videos, logs, or job-only downloaded media; **`templates/<id>/remotion/` must not contain `node_modules`, `build`, `out`, `output`, or `.remotion`** (see `audit_template.py` and `.cursor/rules/templates-no-generated.mdc`).
 - No Remotion source file contains absolute local paths or `jobs/<job_id>` references.
 - `template-props.json` contains only portable relative public paths.
 - A representative render succeeds and has expected dimensions, duration, video stream, and audio stream when audio is expected.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Personal brand mat overlay"
+  short_description: "Dọc 9:16 — beat người vs trám, punch + infographic; tuân template.toml [rules]."
+  default_prompt: "Instantiate hoặc chỉnh templates/personal-brand-mat-overlay: đọc template.toml [rules], hai kiểu timing, meme trong bundle, render xác nhận sau đổi visualize."

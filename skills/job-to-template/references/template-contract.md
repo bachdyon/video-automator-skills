@@ -45,3 +45,7 @@ The script should:
 6. Fail clearly when required assets are missing.
 
 Do not make the instantiate script responsible for rendering; render from the job after inspection and optional parameter tweaks.
+
+## Trám / overlay
+
+Khi template có cảnh trám (nền mờ + infographic), thêm mục `[rules]` trong `template.toml` với ràng buộc **thi hành** (không chỉ gợi ý). Tham chiếu mẫu đầy đủ: `templates/personal-brand-mat-overlay/template.toml`.
