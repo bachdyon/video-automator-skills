@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Job To Showcases"
+  short_description: "Publish only job output/ to public showcases"
+  default_prompt: "Use this skill when adding only jobs/<job_id>/output/ to showcases/<job_id>/output/ and documenting the public demo entry."
