@@ -1,0 +1,4 @@
+interface:
+  display_name: "YouTube Fast Download"
+  short_description: "Download YouTube video and MP3 quickly"
+  default_prompt: "Use $youtube-fast-download to download this YouTube URL and export an MP3."

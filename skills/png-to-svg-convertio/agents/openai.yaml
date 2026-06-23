@@ -1,0 +1,4 @@
+interface:
+  display_name: "PNG to SVG Convertio"
+  short_description: "Convert PNG images to SVG files"
+  default_prompt: "Use $png-to-svg-convertio to convert a local PNG image into an SVG file through Convertio."

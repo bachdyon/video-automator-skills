@@ -68,7 +68,7 @@ The JSON file contains input/output metadata, ffmpeg settings, computed target b
 1. Run the script with the original video path.
 2. Review the JSON summary and `under_max_size` field.
 3. Show the output path, size, and preview image to the user before upload when the user asks to approve quality.
-4. If using the result with `$zernio-upload-direct`, upload only after `under_max_size` is true.
+4. If using the result for an upload target with a 25 MB limit, upload only after `under_max_size` is true.
 
 ## Notes
 

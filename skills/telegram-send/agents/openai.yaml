@@ -1,0 +1,4 @@
+interface:
+  display_name: "Telegram Send"
+  short_description: "Send bot messages and media via Telegram"
+  default_prompt: "Use $telegram-send to send Telegram bot messages, videos, photos, documents, or inspect bot updates."

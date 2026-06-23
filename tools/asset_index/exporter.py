@@ -92,8 +92,20 @@ def _maybe_json(value: Any, default: Any) -> Any:
 
 def _string_list(value: Any) -> list[str]:
     parsed = _maybe_json(value, [])
+    if isinstance(parsed, str):
+        item = parsed.strip()
+        return [item] if item else []
     if isinstance(parsed, list):
         return [str(item) for item in parsed if item is not None]
+    return []
+
+
+def _coerce_string_list(value: Any) -> list[str]:
+    if isinstance(value, str):
+        item = value.strip()
+        return [item] if item else []
+    if isinstance(value, list):
+        return [str(item) for item in value if item is not None and str(item).strip()]
     return []
 
 
@@ -118,10 +130,10 @@ def _build_video_record(row: dict[str, Any], asset_id: str) -> tuple[dict[str, A
         "has_audio": bool(row.get("has_audio") or raw_asset.get("has_audio")),
         "summary": (row.get("summary") or raw_asset.get("summary") or "").strip(),
         "visual_style": (row.get("style") or raw_asset.get("visual_style") or "").strip(),
-        "mood": _string_list(row.get("mood_json")) or list(raw_asset.get("mood") or []),
-        "tags": _string_list(row.get("tags_json")) or list(raw_asset.get("tags") or []),
-        "privacy_notes": list(raw_asset.get("privacy_notes") or []),
-        "quality_notes": list(raw_asset.get("quality_notes") or []),
+        "mood": _string_list(row.get("mood_json")) or _coerce_string_list(raw_asset.get("mood")),
+        "tags": _string_list(row.get("tags_json")) or _coerce_string_list(raw_asset.get("tags")),
+        "privacy_notes": _coerce_string_list(raw_asset.get("privacy_notes")),
+        "quality_notes": _coerce_string_list(raw_asset.get("quality_notes")),
     }
 
     scenes: list[dict[str, Any]] = []
@@ -134,18 +146,18 @@ def _build_video_record(row: dict[str, Any], asset_id: str) -> tuple[dict[str, A
                 "start": round(float(scene.get("start") or 0.0), 3),
                 "end": round(float(scene.get("end") or duration), 3),
                 "description": (scene.get("description") or "").strip(),
-                "subjects": list(scene.get("subjects") or []),
-                "actions": list(scene.get("actions") or []),
+                "subjects": _coerce_string_list(scene.get("subjects")),
+                "actions": _coerce_string_list(scene.get("actions")),
                 "environment": (scene.get("environment") or "").strip(),
                 "shot_type": (scene.get("shot_type") or "").strip(),
                 "camera_motion": (scene.get("camera_motion") or "").strip(),
                 "composition": (scene.get("composition") or "").strip(),
-                "colors": list(scene.get("colors") or []),
-                "mood": list(scene.get("mood") or []),
-                "semantic_tags": list(scene.get("semantic_tags") or []),
-                "recommended_uses": list(scene.get("recommended_uses") or []),
-                "avoid_uses": list(scene.get("avoid_uses") or []),
-                "sample_frames": list(scene.get("sample_frames") or []),
+                "colors": _coerce_string_list(scene.get("colors")),
+                "mood": _coerce_string_list(scene.get("mood")),
+                "semantic_tags": _coerce_string_list(scene.get("semantic_tags")),
+                "recommended_uses": _coerce_string_list(scene.get("recommended_uses")),
+                "avoid_uses": _coerce_string_list(scene.get("avoid_uses")),
+                "sample_frames": _coerce_string_list(scene.get("sample_frames")),
             }
         )
 
@@ -189,10 +201,10 @@ def _build_image_record(row: dict[str, Any], asset_id: str) -> tuple[dict[str, A
         "has_audio": False,
         "summary": (row.get("summary") or gemini.get("summary") or "").strip(),
         "visual_style": (row.get("style") or gemini.get("visual_style") or "").strip(),
-        "mood": _string_list(row.get("mood_json")) or list(gemini.get("mood") or []),
-        "tags": _string_list(row.get("tags_json")) or list(gemini.get("tags") or []),
-        "privacy_notes": list(gemini.get("privacy_notes") or []),
-        "quality_notes": list(gemini.get("quality_notes") or []),
+        "mood": _string_list(row.get("mood_json")) or _coerce_string_list(gemini.get("mood")),
+        "tags": _string_list(row.get("tags_json")) or _coerce_string_list(gemini.get("tags")),
+        "privacy_notes": _coerce_string_list(gemini.get("privacy_notes")),
+        "quality_notes": _coerce_string_list(gemini.get("quality_notes")),
     }
 
     scene = {
@@ -200,17 +212,17 @@ def _build_image_record(row: dict[str, Any], asset_id: str) -> tuple[dict[str, A
         "start": 0.0,
         "end": 0.0,
         "description": (gemini.get("summary") or asset_record["summary"]).strip(),
-        "subjects": list(gemini.get("subjects") or []),
-        "actions": list(gemini.get("actions") or []),
+        "subjects": _coerce_string_list(gemini.get("subjects")),
+        "actions": _coerce_string_list(gemini.get("actions")),
         "environment": (gemini.get("environment") or "").strip(),
         "shot_type": (gemini.get("shot_type") or "").strip(),
         "camera_motion": "",
         "composition": (gemini.get("composition") or "").strip(),
-        "colors": list(gemini.get("colors") or []),
-        "mood": list(gemini.get("mood") or asset_record["mood"]),
-        "semantic_tags": list(gemini.get("tags") or asset_record["tags"]),
-        "recommended_uses": list(gemini.get("recommended_uses") or []),
-        "avoid_uses": list(gemini.get("avoid_uses") or []),
+        "colors": _coerce_string_list(gemini.get("colors")),
+        "mood": _coerce_string_list(gemini.get("mood")) or asset_record["mood"],
+        "semantic_tags": _coerce_string_list(gemini.get("tags")) or asset_record["tags"],
+        "recommended_uses": _coerce_string_list(gemini.get("recommended_uses")),
+        "avoid_uses": _coerce_string_list(gemini.get("avoid_uses")),
         "sample_frames": [],
     }
     return asset_record, [scene]

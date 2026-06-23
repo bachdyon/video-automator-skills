@@ -1,4 +1,0 @@
-# Tùy chọn: tăng/giảm tốc WAV sau TTS (voice_speed_pydub).
-# Cài: pip install -r skills/ausynclab_voice/scripts/requirements-voice-speed.txt
-pydub>=0.25.1
-audioop-lts>=0.2.0; python_version >= "3.13"

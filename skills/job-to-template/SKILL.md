@@ -67,7 +67,7 @@ python3 skills/job-to-template/scripts/audit_template.py \
 Validate the generated skill:
 
 ```bash
-python3 /Users/bachdyon/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
+python3 <path-to-skill-creator>/scripts/quick_validate.py \
   skills/<template_id>-template
 ```
 

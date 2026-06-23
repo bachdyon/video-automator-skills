@@ -1,0 +1,7 @@
+interface:
+  display_name: "Animated SVG"
+  short_description: "Animate SVGs into standalone HTML"
+  default_prompt: "Use $animated-svg to turn this local SVG into a standalone animated HTML file."
+policy:
+  allow_implicit_invocation: true
+

@@ -30,6 +30,15 @@ WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_ENV = WORKSPACE_ROOT / ".env"
 MAX_PIXELS = 4_000_000  # downscale very large images before sending to Gemini
 
+
+def string_list(value: Any) -> list[str]:
+    if isinstance(value, str):
+        item = value.strip()
+        return [item] if item else []
+    if isinstance(value, list):
+        return [str(item) for item in value if item is not None and str(item).strip()]
+    return []
+
 PROMPT_TEMPLATE = """Bạn là chuyên gia phân tích ảnh tĩnh để tái sử dụng cho video vlog short-form (TikTok/Reels) tiếng Việt.
 
 Bạn được cho 1 ảnh nguồn và metadata sau:
@@ -176,9 +185,9 @@ def analyze(
 
     summary = (data.get("summary") or "").strip()
     style = (data.get("visual_style") or "").strip()
-    tags = list(data.get("tags") or [])
-    mood = list(data.get("mood") or [])
-    subjects = list(data.get("subjects") or [])
+    tags = string_list(data.get("tags"))
+    mood = string_list(data.get("mood"))
+    subjects = string_list(data.get("subjects"))
     embed_source = build_embed_source([summary, style, *tags, *mood, *subjects])
 
     record: dict[str, Any] = {

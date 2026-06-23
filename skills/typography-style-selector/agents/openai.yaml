@@ -1,0 +1,4 @@
+interface:
+  display_name: "Typography style selector"
+  short_description: "Choose distinctive fonts, pairings, scale, and weight contrast."
+  default_prompt: "Use $typography-style-selector to choose a distinctive font direction and typography hierarchy before coding this visual."

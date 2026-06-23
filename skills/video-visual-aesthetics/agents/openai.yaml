@@ -1,0 +1,4 @@
+interface:
+  display_name: "Video visual aesthetics"
+  short_description: "Direct distinctive frame, motion, background, and safe-area design for rendered videos."
+  default_prompt: "Use $video-visual-aesthetics to create a distinctive video visual brief before building the HTML/CSS/JS or Remotion composition."

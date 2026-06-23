@@ -1,4 +1,0 @@
-interface:
-  display_name: "Zernio Upload Direct"
-  short_description: "Upload inbox media to Zernio"
-  default_prompt: "Use $zernio-upload-direct to upload a local media file to Zernio and return the public URL."

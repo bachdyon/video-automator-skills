@@ -1,0 +1,4 @@
+interface:
+  display_name: "CapCut TTS"
+  short_description: "CapCut TTS/STT task client workflow"
+  default_prompt: "Use $capcut-tts to generate CapCut TTS audio from this Vietnamese narration."
