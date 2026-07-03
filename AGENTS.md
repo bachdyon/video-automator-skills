@@ -173,6 +173,7 @@ Reference: `https://docs.zernio.com/mcp`.
 - `$heygen-asset-upload`: Upload images, videos, audio, or PDFs to HeyGen and return reusable asset IDs.
 - `$heygen-photo-avatar-video`: Create HeyGen image-to-video/photo-avatar talking-head videos from a person's image plus custom audio; use for video nhân hiệu.
 - `$job-to-template`: Convert a finished Remotion video job into a reusable template directory and matching project skill, with portability audit and render validation.
+- `$klipy-meme-search`: Search and download Klipy GIFs, stickers, clips, and memes as reaction assets for Threads videos, editorial recap videos, and short-form commentary.
 - `$knowledge-share-video-content`: Viết hoặc cập nhật `video_content.md` cho video chia sẻ kiến thức, gồm voiceover kể chuyện, câu mở đầu kéo người xem vào vai chính, luận điểm có câu hỏi phụ, và gợi ý visual AI không chữ.
 - `$png-to-svg-convertio`: Convert local PNG images to SVG files through Convertio API when an SVG asset is required.
 - `$personal-brand-mat-overlay-template`: Personal brand vertical — person vs trám beats, punch + infographic mat overlay; **must follow** `templates/personal-brand-mat-overlay/template.toml` `[rules]`.

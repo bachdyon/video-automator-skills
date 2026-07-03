@@ -1,0 +1,4 @@
+interface:
+  display_name: "Klipy Meme Search"
+  short_description: "Search and download Klipy GIFs, stickers, clips, and memes."
+  default_prompt: "Search Klipy for meme assets matching a video beat, download the best candidates, and return local paths plus attribution."
