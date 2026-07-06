@@ -82,6 +82,7 @@ Template-to-skill mapping:
 - `templates/lao-bach-nien/` → `$lao-bach-nien-template`
 - `templates/theanh28/` → `$theanh28-template`
 - `templates/comment-screens-gameplay/` → `$threads-video-template`
+- `templates/threads-xh-meme-commentary/` → `$threads-xh-meme-commentary-template`
 - `templates/mindset-product-pitch/` → add/use matching `$mindset-product-pitch-template` before reuse
 
 Forbidden:
@@ -164,6 +165,7 @@ Reference: `https://docs.zernio.com/mcp`.
 - `$animated-svg`: Create standalone animated HTML from local SVG artwork, preserving original style, grouping paths semantically, choosing motion that matches the drawing content, and verifying browser render output with no external assets.
 - `$ausynclab-voice`: Work with AusyncLab voices and generate narration audio; optional pydub `speed-pydub` / `voice_speed_pydub.py` when the user asks to change narration speed after TTS without calling the API again.
 - `$threads-video-template`: Instantiate the reusable Threads Video template: ordered Threads/comment screenshots centered over a looping muted gameplay background, one narration audio per screenshot, hard cuts at audio boundaries.
+- `$threads-xh-meme-commentary-template`: Instantiate the Threads XH meme commentary template for Vietnamese article-led Threads videos with screenshot evidence, cartoon meme reactions, green Threads XH branding, and narration written by article logic instead of image order.
 - `$create-edit-image-gpt-image-2`: Create or edit images with KIE.AI GPT Image 2 from text prompts and optional reference images; supports task polling and downloading generated result URLs.
 - `$create-video-seedance-2-0`: Create videos with KIE.AI Bytedance Seedance 2.0 Fast from text, first/last frames, or multimodal references; supports task polling and downloading generated result URLs.
 - `$fal-image-generator`: Synthesize AI images via fal.ai (default `fal-ai/nano-banana`) from prompts or scene_intents, with optional reference images for character lock; saves into `jobs/<id>/input/raw_assets/images/ai_generated/`.
@@ -178,6 +180,7 @@ Reference: `https://docs.zernio.com/mcp`.
 - `$png-to-svg-convertio`: Convert local PNG images to SVG files through Convertio API when an SVG asset is required.
 - `$personal-brand-mat-overlay-template`: Personal brand vertical — person vs trám beats, punch + infographic mat overlay; **must follow** `templates/personal-brand-mat-overlay/template.toml` `[rules]`.
 - `$overlay-subject-placement`: Analyze a frame with non-Gemini vision LLM and recommend safe overlay placement that avoids covering subjects and respects hard 9:16 unsafe padding.
+- `$overlay-video-preparer`: Prepare effect/overlay videos for compositing by checking real alpha, converting black-background stock overlays to H.264 MP4 assets for screen blending, preserving source fps and particle/petal color, and producing Remotion `OffthreadVideo` snippets.
 - `$podcast-karaoke-frame-template`: Instantiate the Podcast Karaoke Rounded Frame render-style template for jobs that already have a render plan, word-level transcript, and visual timeline; semantic mapping stays upstream and job-specific.
 - `$podcast-square-reveal-caption-template`: Instantiate the Podcast Square Reveal Caption render-style template for jobs that already have a render plan, word-level transcript, and visual timeline; renders 1:1 centered footage with Yomogi word-reveal captions, 4-5 words per line and max 4 lines.
 - `$podcast-dong-phuong-template`: Instantiate the Podcast Đông Phương full-width podcast render-style template for jobs that already have a render plan, word-level transcript, and visual timeline.

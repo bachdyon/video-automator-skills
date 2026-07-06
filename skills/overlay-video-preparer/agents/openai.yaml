@@ -1,0 +1,4 @@
+interface:
+  display_name: "Overlay Video Preparer"
+  short_description: "Prepare overlay videos for compositing"
+  default_prompt: "Use $overlay-video-preparer to convert these effect videos into overlay-ready assets for Remotion."

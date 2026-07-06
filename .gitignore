@@ -77,6 +77,7 @@ skills/podcast-karaoke-frame-template/
 skills/podcast-square-reveal-caption-template/
 skills/stickman-template/
 skills/theanh28-template/
+skills/threads-xh-meme-commentary-template/
 skills/threads-video-template/
 .claude/skills/3d-knowledge-sharing-template
 .claude/skills/comment-screens-gameplay-template
@@ -88,6 +89,7 @@ skills/threads-video-template/
 .claude/skills/podcast-square-reveal-caption-template
 .claude/skills/stickman-template
 .claude/skills/theanh28-template
+.claude/skills/threads-xh-meme-commentary-template
 .claude/skills/threads-video-template
 
 # --- raw_assets pool: track folder layout, ignore large media files ---
