@@ -45,11 +45,13 @@ Mẫu đầy đủ ghi trong `templates/personal-brand-mat-overlay/template.toml
    - Write a compact `SKILL.md` with required inputs, optional style knobs, instantiate command, render command, and validation expectations.
    - Add `scripts/instantiate.py` when the template needs deterministic setup. It should copy inputs into canonical job paths, write `template-props.json`, and emit `source/template_params.toml`, `source/creative_plan.toml`, and `source/render_plan.toml`.
    - Keep backward-compatible aliases for knobs likely to change, such as music volume or font scale.
+   - Template skills are local operational scaffolding by default: any video skill path whose name contains `template` must be ignored by git, except this skill itself at `skills/job-to-template/`. Do not `git add -f` generated template skills unless the user explicitly asks to version them.
 
 5. Validate before saying it works.
    - Run this skill's audit script.
    - Run `python3 -m py_compile` for template scripts.
    - Run `quick_validate.py` for the new skill.
+   - Verify `.gitignore` behavior for the generated video template skill and any `.claude/skills/<template_id>-template` mirror with `git check-ignore -v`; verify `skills/job-to-template/` is not ignored.
    - Render a Remotion still.
    - Render a final video from a fresh or updated sample job.
    - Verify final media with `ffprobe`.
@@ -69,6 +71,14 @@ Validate the generated skill:
 ```bash
 python3 <path-to-skill-creator>/scripts/quick_validate.py \
   skills/<template_id>-template
+```
+
+Verify template-skill git ignore behavior:
+
+```bash
+git check-ignore -v skills/<template_id>-template/SKILL.md \
+  .claude/skills/<template_id>-template
+git check-ignore -v skills/job-to-template/SKILL.md || true
 ```
 
 Run a one-frame Remotion check from the sample job:
@@ -101,5 +111,12 @@ Before final response, confirm:
 - `template-props.json` contains only portable relative public paths.
 - A representative render succeeds and has expected dimensions, duration, video stream, and audio stream when audio is expected.
 - `AGENTS.md` lists the new project skill, and `.claude/skills/<skill>` mirrors it when this repo uses Claude compatibility symlinks.
+- Video template skills with `template` in their path are ignored by git by default; `skills/job-to-template/` remains trackable. If `.gitignore` lacks this policy, update it before finishing:
+  - `skills/*template*`
+  - `!skills/job-to-template`
+  - `!skills/job-to-template/`
+  - `!skills/job-to-template/**`
+  - `.claude/skills/*template*`
+  - `!.claude/skills/job-to-template`
 
 Load `references/template-contract.md` when deciding what belongs in `template.toml` or the instantiate script.

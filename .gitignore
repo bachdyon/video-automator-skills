@@ -67,30 +67,12 @@ Desktop.ini
 /templates/
 
 # --- Local video template skills ---
-skills/3d-knowledge-sharing-template/
-skills/comment-screens-gameplay-template
-skills/lao-bach-nien-template/
-skills/mindset-product-pitch-template/
-skills/personal-brand-mat-overlay-template/
-skills/podcast-dong-phuong-template/
-skills/podcast-karaoke-frame-template/
-skills/podcast-square-reveal-caption-template/
-skills/stickman-template/
-skills/theanh28-template/
-skills/threads-xh-meme-commentary-template/
-skills/threads-video-template/
-.claude/skills/3d-knowledge-sharing-template
-.claude/skills/comment-screens-gameplay-template
-.claude/skills/lao-bach-nien-template
-.claude/skills/mindset-product-pitch-template
-.claude/skills/personal-brand-mat-overlay-template
-.claude/skills/podcast-dong-phuong-template
-.claude/skills/podcast-karaoke-frame-template
-.claude/skills/podcast-square-reveal-caption-template
-.claude/skills/stickman-template
-.claude/skills/theanh28-template
-.claude/skills/threads-xh-meme-commentary-template
-.claude/skills/threads-video-template
+skills/*template*
+!skills/job-to-template
+!skills/job-to-template/
+!skills/job-to-template/**
+.claude/skills/*template*
+!.claude/skills/job-to-template
 
 # --- raw_assets pool: track folder layout, ignore large media files ---
 raw_assets/*

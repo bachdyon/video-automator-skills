@@ -81,6 +81,8 @@ Template-to-skill mapping:
 - `templates/podcast-dong-phuong/` → `$podcast-dong-phuong-template`
 - `templates/lao-bach-nien/` → `$lao-bach-nien-template`
 - `templates/theanh28/` → `$theanh28-template`
+- `templates/outfit-color-pairs/` → `$outfit-color-pairs-template`
+- `templates/polo-outfit-breakdown/` → `$polo-outfit-breakdown-template`
 - `templates/comment-screens-gameplay/` → `$threads-video-template`
 - `templates/threads-xh-meme-commentary/` → `$threads-xh-meme-commentary-template`
 - `templates/mindset-product-pitch/` → add/use matching `$mindset-product-pitch-template` before reuse
@@ -180,6 +182,8 @@ Reference: `https://docs.zernio.com/mcp`.
 - `$png-to-svg-convertio`: Convert local PNG images to SVG files through Convertio API when an SVG asset is required.
 - `$personal-brand-mat-overlay-template`: Personal brand vertical — person vs trám beats, punch + infographic mat overlay; **must follow** `templates/personal-brand-mat-overlay/template.toml` `[rules]`.
 - `$overlay-subject-placement`: Analyze a frame with non-Gemini vision LLM and recommend safe overlay placement that avoids covering subjects and respects hard 9:16 unsafe padding.
+- `$outfit-color-pairs-template`: Instantiate the Outfit Color Pairs template for vertical fashion shorts with a warning outfit scene, color-pair recommendation scenes, Google Sans pill captions, swatches, TTS per scene, and background music.
+- `$polo-outfit-breakdown-template`: Instantiate the Polo Outfit Breakdown template from raw men's outfit images by using image_gen to create standardized full-body model cutouts and folded-clothing flat-lay ingredient images, then render a vertical Remotion video with CapCut narration.
 - `$overlay-video-preparer`: Prepare effect/overlay videos for compositing by checking real alpha, converting black-background stock overlays to H.264 MP4 assets for screen blending, preserving source fps and particle/petal color, and producing Remotion `OffthreadVideo` snippets.
 - `$podcast-karaoke-frame-template`: Instantiate the Podcast Karaoke Rounded Frame render-style template for jobs that already have a render plan, word-level transcript, and visual timeline; semantic mapping stays upstream and job-specific.
 - `$podcast-square-reveal-caption-template`: Instantiate the Podcast Square Reveal Caption render-style template for jobs that already have a render plan, word-level transcript, and visual timeline; renders 1:1 centered footage with Yomogi word-reveal captions, 4-5 words per line and max 4 lines.
