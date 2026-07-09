@@ -1,0 +1,7 @@
+interface:
+  display_name: "Create Video Veo 3.1"
+  short_description: "Generate, extend, and upscale Veo 3.1 videos via KIE"
+  default_prompt: "Use $create-video-veo-3-1 to generate a short vertical video from this prompt and download the result."
+
+policy:
+  allow_implicit_invocation: true
