@@ -1,0 +1,4 @@
+interface:
+  display_name: "WaveSpeed Lipsync"
+  short_description: "Low-cost InfiniteTalk lipsync workflow"
+  default_prompt: "Use $wavespeed-lipsync to create a low-cost talking avatar video from this image URL and audio URL."

@@ -7,6 +7,7 @@
     "@fontsource/asimovian": "^5.2.2",
     "@fontsource/bricolage-grotesque": "^5.2.10",
     "@fontsource/noto-sans": "^5.2.10",
+    "@remotion/captions": "^4.0.471",
     "@remotion/cli": "^4.0.451",
     "@remotion/google-fonts": "^4.0.451",
     "@remotion/media": "^4.0.451",

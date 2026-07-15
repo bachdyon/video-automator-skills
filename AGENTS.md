@@ -13,6 +13,24 @@ At the start of a new video/Remotion project, run `scripts/ensure-remotion-skill
 
 Remotion dependency rule: new `jobs/<job_id>/remotion/node_modules` paths must be symlinks to repo-root `../../../node_modules`. Do not run `npm install` inside individual job folders. If dependencies are missing, run `npm install` once at repo root and reuse that shared install for all future jobs.
 
+## Finished Video Delivery Rule
+
+After finishing any video render, upload the final MP4 to FilePost dev with `$filepost-file-upload` before the final response when credentials are available.
+
+Then send two separate Telegram messages through `$telegram-send` using `.env.lymaiinbot`:
+
+1. First message exactly:
+
+```text
+<first full lyric/caption cue in the video, joined into one line>
+<song title>
+<singer name>
+```
+
+2. Second message: the FilePost URL only.
+
+Never combine these messages. Never print or commit Telegram/FilePost credentials. Use `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` from `.env.lymaiinbot`; if `TELEGRAM_CHAT_ID` is missing, ask the user to message the bot once and run updates to resolve it.
+
 ## Voice Rule
 
 For Threads Video jobs and short screenshot/commentary videos in this repository, only use `$capcut-tts` with CapCut voice `Cô Gái Hoạt Ngôn` unless the user explicitly asks to change voice.
@@ -23,6 +41,10 @@ Required voice settings:
 - `resource_id` / `--resource-id`: `7102355709945188865`
 
 Do not use `$ausynclab-voice`, `$free-tts`, ElevenLabs, OpenAI TTS, or any other voice provider for these jobs when the user says “tạo voice”, “đọc ảnh”, “tạo job Threads video”, or otherwise leaves the voice unspecified.
+
+## Lipsync Rule
+
+For lipsync jobs, talking-photo/avatar videos, or any task that animates a person speaking from one image plus audio, use `$wavespeed-lipsync` by default because WaveSpeedAI InfiniteTalk is the low-cost option. Default to `resolution=480p` and `seed=-1` unless the user explicitly asks for another provider or higher quality.
 
 ## Threads Image Text Rule
 
@@ -86,7 +108,10 @@ Template-to-skill mapping:
 - `templates/english-learning-split-subtitles/` → `$english-learning-split-subtitles-template`
 - `templates/comment-screens-gameplay/` → `$threads-video-template`
 - `templates/threads-xh-meme-commentary/` → `$threads-xh-meme-commentary-template`
+- `templates/agency-life-template/` → `$agency-life-template`
 - `templates/mindset-product-pitch/` → add/use matching `$mindset-product-pitch-template` before reuse
+- `templates/parenting-veo-dialogue/` → `$parenting-veo-dialogue-template`
+- `templates/music-film-caption/` → `$music-film-caption-template`
 
 Forbidden:
 
@@ -163,6 +188,7 @@ Reference: `https://docs.zernio.com/mcp`.
 
 - `$3d-knowledge-sharing-template`: Instantiate the 3D Knowledge Sharing Template for vertical Vietnamese educational explainers with soft 3D isometric illustrations, Bricolage title highlights, max-4-word subtitles, and subtle bottom credit.
 - `$add-job-to-showcases`: Publish a finished job to `showcases/<job_id>/` for public demos by copying only `jobs/<job_id>/output/`, verifying no other top-level artifacts remain, and updating showcase docs.
+- `$agency-life-template`: Instantiate the Agency Life Template: square social clips with a yellow top headline banner, black Google Sans 700 two-line text, center-cropped source footage, and original audio.
 - `$asset-semantic-extractor`: Analyze image or video assets and produce a TOML semantic index for video assembly.
 - `$audio-deduplicate`: Remove consecutive repeated speech from WAV or MP3 files using Whisper timestamps and export a cleaned audio file.
 - `$animated-svg`: Create standalone animated HTML from local SVG artwork, preserving original style, grouping paths semantically, choosing motion that matches the drawing content, and verifying browser render output with no external assets.
@@ -172,6 +198,7 @@ Reference: `https://docs.zernio.com/mcp`.
 - `$create-edit-image-gpt-image-2`: Create or edit images with KIE.AI GPT Image 2 from text prompts and optional reference images; supports task polling and downloading generated result URLs.
 - `$create-video-seedance-2-0`: Create videos with KIE.AI Bytedance Seedance 2.0 Fast from text, first/last frames, or multimodal references; supports task polling and downloading generated result URLs.
 - `$fal-image-generator`: Synthesize AI images via fal.ai (default `fal-ai/nano-banana`) from prompts or scene_intents, with optional reference images for character lock; saves into `jobs/<id>/input/raw_assets/images/ai_generated/`.
+- `$facebook-reel-downloader`: Download public or user-authorized Facebook Reels/videos with yt-dlp into the global raw asset pool or a specific job, with optional browser cookies and a TOML media report.
 - `$filepost-file-upload`: Upload local files to FilePost permanent CDN URLs and list, get, or delete uploaded FilePost files via the bundled API client.
 - `$free-tts`: Generate free/local Vietnamese narration with VieNeu-TTS when `.env` has no `AUSYNCLAB_API_KEY`, or when the user explicitly asks for free/local/VieNeu TTS.
 - `$capcut-tts`: Use the CapCut common task client (`capcut_common_task_client.py`) for explicit CapCut TTS task creation/querying, audio/video upload, or CapCut STT/subtitle recognition; this is a non-official reverse-engineered flow and is not the default narration provider.
@@ -180,10 +207,13 @@ Reference: `https://docs.zernio.com/mcp`.
 - `$job-to-template`: Convert a finished Remotion video job into a reusable template directory and matching project skill, with portability audit and render validation.
 - `$klipy-meme-search`: Search and download Klipy GIFs, stickers, clips, and memes as reaction assets for Threads videos, editorial recap videos, and short-form commentary.
 - `$knowledge-share-video-content`: Viết hoặc cập nhật `video_content.md` cho video chia sẻ kiến thức, gồm voiceover kể chuyện, câu mở đầu kéo người xem vào vai chính, luận điểm có câu hỏi phụ, và gợi ý visual AI không chữ.
+- `$lyricfind-lyrics`: Search LyricFind for song lyrics/context to correct Vietnamese music STT before writing subtitle captions.
+- `$music-film-caption-template`: Instantiate the Music Film Caption template for vertical emotional music clips with source crop/scale, center-cropped film dust overlay, two-line lyric captions, quote/credit, and spinning record badge.
 - `$png-to-svg-convertio`: Convert local PNG images to SVG files through Convertio API when an SVG asset is required.
 - `$personal-brand-mat-overlay-template`: Personal brand vertical — person vs trám beats, punch + infographic mat overlay; **must follow** `templates/personal-brand-mat-overlay/template.toml` `[rules]`.
 - `$overlay-subject-placement`: Analyze a frame with non-Gemini vision LLM and recommend safe overlay placement that avoids covering subjects and respects hard 9:16 unsafe padding.
 - `$outfit-color-pairs-template`: Instantiate the Outfit Color Pairs template for vertical fashion shorts with a warning outfit scene, color-pair recommendation scenes, Google Sans pill captions, swatches, TTS per scene, and background music.
+- `$parenting-veo-dialogue-template`: Instantiate the Parenting Veo Dialogue template for Vietnamese parent-child education videos from 1-2 static-camera Veo 3 clips, original dialogue audio, speaker segments, and word-level karaoke subtitles above the mother's head.
 - `$polo-outfit-breakdown-template`: Instantiate the Polo Outfit Breakdown template from raw men's outfit images by using image_gen to create standardized full-body model cutouts and folded-clothing flat-lay ingredient images, then render a vertical Remotion video with CapCut narration.
 - `$english-learning-split-subtitles-template`: Instantiate the English Learning Split Subtitles template for vertical English listening videos with a 35% top illustration video, 65% pink-beige plaid rolling bilingual subtitles, active-word yellow highlights, and a drifting brand watermark.
 - `$overlay-video-preparer`: Prepare effect/overlay videos for compositing by checking real alpha, converting black-background stock overlays to H.264 MP4 assets for screen blending, preserving source fps and particle/petal color, and producing Remotion `OffthreadVideo` snippets.
@@ -196,6 +226,7 @@ Reference: `https://docs.zernio.com/mcp`.
 - `$video-downloader`: Download TikTok videos, slideshow images, or audio through TikWM into `raw_assets/` or `jobs/<id>/input/raw_assets/`.
 - `$youtube-fast-download`: Download public YouTube videos or Shorts quickly with yt-dlp, save MP4 video, and optionally export MP3 audio.
 - `$video-audio-extractor`: Extract an audio track from video to WAV/MP3 for transcript, dedupe, or background-music reuse.
+- `$wavespeed-lipsync`: Create low-cost lipsync/talking-avatar videos from one image URL plus one audio URL with WaveSpeedAI InfiniteTalk; default lipsync provider using 480p unless the user asks otherwise.
 - `$word-timestamps-extractor`: Extract narration transcript with sentence and word timestamps.
 - `$remotion-best-practices`: Official Remotion skill installed from `remotion-dev/skills`; use for all Remotion code and project work.
 - `$semantic-asset-mapper`: Match transcript or scene intents to indexed image and video assets.

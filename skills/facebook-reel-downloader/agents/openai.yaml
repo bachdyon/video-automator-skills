@@ -1,0 +1,4 @@
+interface:
+  display_name: "Facebook Reel Downloader"
+  short_description: "Tải Facebook Reel bằng yt-dlp vào raw assets"
+  default_prompt: "Use $facebook-reel-downloader to download this Facebook Reel into the project raw assets."
